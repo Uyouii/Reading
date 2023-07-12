@@ -4,7 +4,7 @@ import json
 import sys
 
 IGNORE_FILES = [".git", "README.md", "readme.md", "Readme.md"]
-LINK_PREFIX = "https://github.com/Uyouii/bookreading/blob/master"
+LINK_PREFIX = "https://github.com/Uyouii/Reading/blob/master"
 
 PY3 = True if sys.version >= '3' else False
 
@@ -127,5 +127,5 @@ class Docs(object):
 
 if __name__ == "__main__":
     pwd = os.getcwd()
-    docs = Docs("bookreading", pwd, "", 0)
+    docs = Docs("Reading", pwd, "", 0)
     print(docs.genReadmeContent())

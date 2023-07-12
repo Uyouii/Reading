@@ -30,7 +30,7 @@ Prometheus大部分组件都是通过Go语言编写，方便构建和部署。
 
 ## 架构
 
-![prometheus01](https://github.com/Uyouii/BookReading/blob/master/images/prometheus/prometheus01.png?raw=true)
+![prometheus01](https://github.com/Uyouii/Reading/blob/master/images/prometheus/prometheus01.png?raw=true)
 
 Promethues直接从监控目标或者Pushgateway中获取metrics数据。它会把抓取的数据存在本地时间序列数据库(TSDB)中，并且判断是否要生成告警信息。[Grafana](https://grafana.com/)或者其他API可以通过PromQL获取监控数据。
 
@@ -115,7 +115,7 @@ TSDB由若干个`Block`(`01EM6Q6A1YPX4G9TEB20J22B2R` 就是一个Block), `chunks
 
 TSDB数据概览：
 
-![image](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb1-9dce57fbe455a6163a84d68c9c73c7dd.svg)
+![image](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb1-9dce57fbe455a6163a84d68c9c73c7dd.svg)
 
 Block就是存储数据的“块”（上图中灰色的部分），TSDB会包含很多个这样的Block。磁盘上保存的`Block`都是不变的，每个Block都是一个单独的数据库，包含自己的索引和元数据(meta.json)，接下来会详细介绍。
 
@@ -137,27 +137,27 @@ Head Block是TSDB内存中的部分。样本数据首先会写入到Head Block�
 
 ### Sample在Head Block中的流程
 
-![tsdb2-3e96b764cc0a7e28988714462be15b02](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb2-3e96b764cc0a7e28988714462be15b02.svg)
+![tsdb2-3e96b764cc0a7e28988714462be15b02](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb2-3e96b764cc0a7e28988714462be15b02.svg)
 
 Head Block会包含若干个`Chunk`, Sample会存储在Chunk中。Head Block中只会有一个活跃的Chunk（上图中红色的Chunk），这是TSDB中唯一写入Sample的地方。当把Sample被写入到Chunk前，TSDB会预写WAL(write ahead log)来保证数据的持久性。（程序崩溃或者服务器宕机重启时可以通过预写日志恢复内存中的数据）。
 
-![tsdb3-fcc2a659bb9dc466f2ad51278b9ef940](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb3-fcc2a659bb9dc466f2ad51278b9ef940.svg)
+![tsdb3-fcc2a659bb9dc466f2ad51278b9ef940](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb3-fcc2a659bb9dc466f2ad51278b9ef940.svg)
 
 Prometheus默认每个Chunk跨度是120个Samples，Sample的间隔是15s，所以每个Chunk的跨度是30min，此时这个Chunk被视为full。每当Chunk满了后，就会产生一个新块。
 
-![tsdb4-5db3bd1d5402bab9a0804723ad2c79aa](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb4-5db3bd1d5402bab9a0804723ad2c79aa.svg)
+![tsdb4-5db3bd1d5402bab9a0804723ad2c79aa](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb4-5db3bd1d5402bab9a0804723ad2c79aa.svg)
 
 每当切割出一个新的Chunk，旧Chunk就会被刷新到磁盘，并且使用mmap对其进行内存映射，同时在内存中只存储下对这个Chunk的引用。通过mmap可以在访问时将其动态地加载到内存中（操作系统提供的功能，缺页中断)。
 
-![tsdb5-1d622e6852dde75dd1dbf97fa930dacf](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb5-1d622e6852dde75dd1dbf97fa930dacf.svg)
+![tsdb5-1d622e6852dde75dd1dbf97fa930dacf](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb5-1d622e6852dde75dd1dbf97fa930dacf.svg)
 
 随着时间推移，新的Chunk会不断生成并存储在文件中。
 
-![tsdb8-2143f3ae9296366a5998fb78ee2320d1](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb8-2143f3ae9296366a5998fb78ee2320d1.svg)
+![tsdb8-2143f3ae9296366a5998fb78ee2320d1](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb8-2143f3ae9296366a5998fb78ee2320d1.svg)
 
 Prometheus默认2h为一个Block的跨度，被称为`chunkRange`。一段时间过后，Head Block如上图所示，此时磁盘中有5个已满的块，内存中的Chunk也基本已满。此时Head Block中有6个chunk，每个chunk跨度30min，所以head中有3h的数据。达到了`chunkRange*3/2`。
 
-![tsdb9-73e001cb1662df81b619a2bafc33351d](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb9-73e001cb1662df81b619a2bafc33351d.svg)
+![tsdb9-73e001cb1662df81b619a2bafc33351d](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb9-73e001cb1662df81b619a2bafc33351d.svg)
 
 当Head Block中的数据跨越`chunkRange*3/2`时，前`chunkRange`的的数据（默认为2h）被压缩为一个持久Block。此时，WAL也被截断，并且会创建一个新的`checkpoint`(后续会介绍)。
 
@@ -355,17 +355,17 @@ data
 
 在Head Block的实现中，当Head Block中包含了`chunkRange*3/2`时间范围的数据时，会将前`chunkRange`范围的数据转化为持久化的Block。
 
-![tsdb8-2143f3ae9296366a5998fb78ee2320d1](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb8-2143f3ae9296366a5998fb78ee2320d1.svg)
+![tsdb8-2143f3ae9296366a5998fb78ee2320d1](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb8-2143f3ae9296366a5998fb78ee2320d1.svg)
 
 
 
-![tsdb9-73e001cb1662df81b619a2bafc33351d](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb9-73e001cb1662df81b619a2bafc33351d.svg)
+![tsdb9-73e001cb1662df81b619a2bafc33351d](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb9-73e001cb1662df81b619a2bafc33351d.svg)
 
 
 
 `chunkRange`也可以成为`BlockRange`，在Promethues中，从Head中截断出的Block默认跨度时2h。
 
-![image](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/prometheus/tsdb1-9dce57fbe455a6163a84d68c9c73c7dd.svg)
+![image](https://raw.githubusercontent.com/Uyouii/Reading/master/images/prometheus/tsdb1-9dce57fbe455a6163a84d68c9c73c7dd.svg)
 
 随着Block不断增多，多个Block会被压缩成一个新的Block，同时删除旧的Block。所以新的Block有两种生成方式，从Head Block中截断，或者从已有的Block中合并。
 

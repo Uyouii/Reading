@@ -149,7 +149,7 @@ docker run -d -p 3000:3000 grafana/grafana
 
 Prometheus的基本架构：
 
-![Prometheus architecture](/Users/taiyou.dong/Project/uyouiigit/BookReading/images/prometheus/architecture.png)
+![Prometheus architecture](../../../images/prometheus/architecture.png)
 
 ## Prometheus Server
 

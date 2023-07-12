@@ -34,7 +34,7 @@ GFS还支持快照(snapshot)和追加写(record append)。snapshot可以以低�
 
 ###  2.3 架构 (**Architecture**)
 
-![ds2](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/distribuide_system/ds2.png)
+![ds2](https://raw.githubusercontent.com/Uyouii/Reading/master/images/distribuide_system/ds2.png)
 
 一个GFS集群由一个Master和多个chunkserver组成，会有多个client同时访问，如上图所示。在同一台机器中同时运行chunkserver和client是可行的，只要机器的资源足够，并且可以容忍应用程序带来的不稳定性和低可靠性。
 
@@ -50,7 +50,7 @@ client和chunkserver都不会缓存文件数据，也就不用考虑缓存带来
 
 single master可以极大的简化GFS文件系统的设计，所有文件的元数据都会在一个单独的master机器中管理，使得master可以全局的对chunk和chunkserver进行管控和复制。但是单一的master也会成为瓶颈，所以需要尽量减少它在client的read和write操作中的参与量。client不会从master中读取文件数据，而是通过master获取应该访问哪些chunkserver。client会在本地缓存这些元数据信息，并且直接和chunkserver进行文件数据相关的交互。
 
-![gfs1](https://github.com/Uyouii/BookReading/blob/master/images/distribuide_system/gfs1.png?raw=true)
+![gfs1](https://github.com/Uyouii/Reading/blob/master/images/distribuide_system/gfs1.png?raw=true)
 
 上图是简单的交互流程：
 
@@ -124,7 +124,7 @@ GFS拥有一个相对宽松的一致性模型，可以很好的支持分布式�
 
 GFS中文件namespace的更改（例如创建文件）是原子(atomic)操作。在master中namespace lock保证了操作的原子性和正确性(4.1节)；在mater中的operation log定义了这些操作的全局顺序(2.6.3)。
 
-![gfs2](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/distribuide_system/gfs2.png)
+![gfs2](https://raw.githubusercontent.com/Uyouii/Reading/master/images/distribuide_system/gfs2.png)
 
 数据修改后文件区域的状态取决于数据修改的类型、操作是否成功以及是否存在并发(concurrent)操作。Table1总结了这些情况。
 
@@ -163,7 +163,7 @@ mutation是指修改chunk内容或者元数据的操作，例如write和append�
 
 lease机制的目的在于最大程度的减少master的管理开销。lease初始有效时间为60s。但是，只要chunk在发生变更，primary就可以一直请求master并续期。续期的请求和结果携带在master和chunkserver之间定时的HeartBeat消息中。master有时可能会在lease到期前尝试撤销（例如，当文件在被重命名时，master想禁止这个文件上的muation操作）。即使master和primary之间断开连接，也可以在就的lease到期后，向另一个副本授予新的lease。
 
-![gfs3](https://raw.githubusercontent.com/Uyouii/BookReading/master/images/distribuide_system/gfs3.png)
+![gfs3](https://raw.githubusercontent.com/Uyouii/Reading/master/images/distribuide_system/gfs3.png)
 
 
 

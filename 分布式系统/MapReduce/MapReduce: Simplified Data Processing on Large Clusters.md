@@ -2,7 +2,7 @@
 
 —— Jeffrey Dean and Sanjay Ghemawat jeff@google.com, sanjay@google.com
 
-[original link](https://github.com/Uyouii/BookReading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/MapReduce/mapreduce.pdf)
+[original link](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/MapReduce/mapreduce.pdf)
 
 ## **Abstract**
 
