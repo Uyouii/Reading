@@ -30,7 +30,7 @@ Prometheus大部分组件都是通过Go语言编写，方便构建和部署。
 
 ## 架构
 
-![prometheus01](https://github.com/Uyouii/Reading/blob/master/images/prometheus/prometheus01.png?raw=true)
+![prometheus01](../../../images/prometheus/prometheus01.png)
 
 Promethues直接从监控目标或者Pushgateway中获取metrics数据。它会把抓取的数据存在本地时间序列数据库(TSDB)中，并且判断是否要生成告警信息。[Grafana](https://grafana.com/)或者其他API可以通过PromQL获取监控数据。
 
