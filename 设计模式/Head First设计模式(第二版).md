@@ -32,3 +32,40 @@
 **依赖倒置原则**(Dependency Inversion Principle)：依赖抽象，不依赖具体类。
 
 **抽象工厂模式**：提供一个接口来创建相关或依赖对象的家族，而不需要制定具体类。
+
+## 5 单件模式
+
+**单件模式**：确保一个类只有一个实例，并提供一个全局访问点。
+
+go语言的一个单件模式的示例：
+
+```go
+package singleton
+
+import (
+	"sync"
+)
+
+// Singleton 类型定义
+type Singleton struct {
+	// ... 其他字段
+}
+
+var instance *Singleton
+var once sync.Once
+
+// GetInstance 用于获取单一实例
+func GetInstance() *Singleton {
+	once.Do(func() {
+		instance = &Singleton{}
+	})
+	return instance
+}
+```
+
+## 6 命令模式
+
+**命令模式**：把请求封装为对象，以便用不同的请求、队列或者日志请求来参数化其他对象，并支持可撤销的操作。
+
+## 7 适配器和外观模式
+
