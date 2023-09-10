@@ -202,6 +202,7 @@
 - [活着](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%B4%BB%E7%9D%80.md)
 - [流浪地球](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%B5%81%E6%B5%AA%E5%9C%B0%E7%90%83.md)
 - [潜规则](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%BD%9C%E8%A7%84%E5%88%99.md)
+- [焦虑的人](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%84%A6%E8%99%91%E7%9A%84%E4%BA%BA.md)
 - [百年孤独](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%99%BE%E5%B9%B4%E5%AD%A4%E7%8B%AC.md)
 - [硅谷钢铁侠：埃隆·马斯克的冒险人生](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%A1%85%E8%B0%B7%E9%92%A2%E9%93%81%E4%BE%A0%EF%BC%9A%E5%9F%83%E9%9A%86%C2%B7%E9%A9%AC%E6%96%AF%E5%85%8B%E7%9A%84%E5%86%92%E9%99%A9%E4%BA%BA%E7%94%9F.md)
 - [社会性动物](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%A4%BE%E4%BC%9A%E6%80%A7%E5%8A%A8%E7%89%A9.md)
