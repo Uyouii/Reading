@@ -214,6 +214,7 @@
 - [解忧杂货店](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%A7%A3%E5%BF%A7%E6%9D%82%E8%B4%A7%E5%BA%97.md)
 - [认知觉醒](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%AE%A4%E7%9F%A5%E8%A7%89%E9%86%92.md)
 - [认知驱动](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%AE%A4%E7%9F%A5%E9%A9%B1%E5%8A%A8.md)
+- [许三观卖血记](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%AE%B8%E4%B8%89%E8%A7%82%E5%8D%96%E8%A1%80%E8%AE%B0.md)
 - [贪婪的多巴胺](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%B4%AA%E5%A9%AA%E7%9A%84%E5%A4%9A%E5%B7%B4%E8%83%BA.md)
 - [邓小平时代](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E9%82%93%E5%B0%8F%E5%B9%B3%E6%97%B6%E4%BB%A3.md)
 - [金字塔原理](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E9%87%91%E5%AD%97%E5%A1%94%E5%8E%9F%E7%90%86.md)
@@ -222,6 +223,8 @@
 ### **[<font color=#008000>kafka</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka)**
 #### **[<font color=#008000>图解 Kafka 之实战指南</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E5%9B%BE%E8%A7%A3%20Kafka%20%E4%B9%8B%E5%AE%9E%E6%88%98%E6%8C%87%E5%8D%97)**
 - [01 初识Kafka](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E5%9B%BE%E8%A7%A3%20Kafka%20%E4%B9%8B%E5%AE%9E%E6%88%98%E6%8C%87%E5%8D%97/01%20%E5%88%9D%E8%AF%86Kafka.md)
+#### **[<font color=#008000>深入理解kafka：核心原理与设计实践</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3kafka%EF%BC%9A%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E8%AE%BE%E8%AE%A1%E5%AE%9E%E8%B7%B5)**
+- [第1章 初识Kafka](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3kafka%EF%BC%9A%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E8%AE%BE%E8%AE%A1%E5%AE%9E%E8%B7%B5/%E7%AC%AC1%E7%AB%A0%20%E5%88%9D%E8%AF%86Kafka.md)
 ## **[<font color=#008000>监控</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7)**
 ### **[<font color=#008000>Prometheus</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/Prometheus)**
 #### **[<font color=#008000>Prometheus-TSDB</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/Prometheus/Prometheus-TSDB)**
