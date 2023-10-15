@@ -194,6 +194,7 @@
 - [情人](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%83%85%E4%BA%BA.md)
 - [情商：为什么情商比智商更重要](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%83%85%E5%95%86%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%83%85%E5%95%86%E6%AF%94%E6%99%BA%E5%95%86%E6%9B%B4%E9%87%8D%E8%A6%81.md)
 - [战斗细胞](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%88%98%E6%96%97%E7%BB%86%E8%83%9E.md)
+- [新摄影笔记](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%96%B0%E6%91%84%E5%BD%B1%E7%AC%94%E8%AE%B0.md)
 - [明朝那些事儿](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%98%8E%E6%9C%9D%E9%82%A3%E4%BA%9B%E4%BA%8B%E5%84%BF.md)
 - [是我把你蠢哭了吗](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%98%AF%E6%88%91%E6%8A%8A%E4%BD%A0%E8%A0%A2%E5%93%AD%E4%BA%86%E5%90%97.md)
 - [月亮与六便士](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%9C%88%E4%BA%AE%E4%B8%8E%E5%85%AD%E4%BE%BF%E5%A3%AB.md)
