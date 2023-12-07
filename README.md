@@ -112,6 +112,9 @@
 ### **[<font color=#008000>VM-FT</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/VM-FT)**
 - [Fault-Tolerant Virtual Machines](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/VM-FT/Fault-Tolerant%20Virtual%20Machines.md)
 - [容错虚拟机设计](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/VM-FT/%E5%AE%B9%E9%94%99%E8%99%9A%E6%8B%9F%E6%9C%BA%E8%AE%BE%E8%AE%A1.md)
+### **[<font color=#008000>ZooKeeper</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper)**
+- [ZooKeeper: Wait-free coordination for Internet-scale systems](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/ZooKeeper%3A%20Wait-free%20coordination%20for%20Internet-scale%20systems.md)
+- [Zookeeper](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/Zookeeper.md)
 ## **[<font color=#008000>图形学</font>](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6)**
 ### **[<font color=#008000>Fundamental of Gomputer Graphics</font>](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Fundamental%20of%20Gomputer%20Graphics)**
 - [01 Introduction](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Fundamental%20of%20Gomputer%20Graphics/01%20Introduction.md)
@@ -184,6 +187,7 @@
 - [南京大屠杀](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%8D%97%E4%BA%AC%E5%A4%A7%E5%B1%A0%E6%9D%80.md)
 - [原则：应对变化中的世界秩序](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%8E%9F%E5%88%99%EF%BC%9A%E5%BA%94%E5%AF%B9%E5%8F%98%E5%8C%96%E4%B8%AD%E7%9A%84%E4%B8%96%E7%95%8C%E7%A7%A9%E5%BA%8F.md)
 - [哲学家们都干了什么](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%93%B2%E5%AD%A6%E5%AE%B6%E4%BB%AC%E9%83%BD%E5%B9%B2%E4%BA%86%E4%BB%80%E4%B9%88.md)
+- [埃隆.马斯克传](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%9F%83%E9%9A%86.%E9%A9%AC%E6%96%AF%E5%85%8B%E4%BC%A0.md)
 - [天才在左 疯子在右](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%A4%A9%E6%89%8D%E5%9C%A8%E5%B7%A6%20%E7%96%AF%E5%AD%90%E5%9C%A8%E5%8F%B3.md)
 - [好好学习：个人知识管理精进指南](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%A5%BD%E5%A5%BD%E5%AD%A6%E4%B9%A0%EF%BC%9A%E4%B8%AA%E4%BA%BA%E7%9F%A5%E8%AF%86%E7%AE%A1%E7%90%86%E7%B2%BE%E8%BF%9B%E6%8C%87%E5%8D%97.md)
 - [宇宙](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%AE%87%E5%AE%99.md)
@@ -194,6 +198,7 @@
 - [情人](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%83%85%E4%BA%BA.md)
 - [情商：为什么情商比智商更重要](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%83%85%E5%95%86%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%83%85%E5%95%86%E6%AF%94%E6%99%BA%E5%95%86%E6%9B%B4%E9%87%8D%E8%A6%81.md)
 - [战斗细胞](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%88%98%E6%96%97%E7%BB%86%E8%83%9E.md)
+- [支付战争](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%94%AF%E4%BB%98%E6%88%98%E4%BA%89.md)
 - [新摄影笔记](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%96%B0%E6%91%84%E5%BD%B1%E7%AC%94%E8%AE%B0.md)
 - [明朝那些事儿](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%98%8E%E6%9C%9D%E9%82%A3%E4%BA%9B%E4%BA%8B%E5%84%BF.md)
 - [是我把你蠢哭了吗](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%98%AF%E6%88%91%E6%8A%8A%E4%BD%A0%E8%A0%A2%E5%93%AD%E4%BA%86%E5%90%97.md)
