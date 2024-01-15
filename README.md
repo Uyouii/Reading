@@ -114,7 +114,7 @@
 - [容错虚拟机设计](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/VM-FT/%E5%AE%B9%E9%94%99%E8%99%9A%E6%8B%9F%E6%9C%BA%E8%AE%BE%E8%AE%A1.md)
 ### **[<font color=#008000>ZooKeeper</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper)**
 - [ZooKeeper: Wait-free coordination for Internet-scale systems](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/ZooKeeper%3A%20Wait-free%20coordination%20for%20Internet-scale%20systems.md)
-- [Zookeeper](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/Zookeeper.md)
+- [Zookeeper.zh](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/Zookeeper.zh.md)
 ## **[<font color=#008000>图形学</font>](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6)**
 ### **[<font color=#008000>Fundamental of Gomputer Graphics</font>](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Fundamental%20of%20Gomputer%20Graphics)**
 - [01 Introduction](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Fundamental%20of%20Gomputer%20Graphics/01%20Introduction.md)
@@ -197,6 +197,7 @@
 - [当尼采哭泣](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%BD%93%E5%B0%BC%E9%87%87%E5%93%AD%E6%B3%A3.md)
 - [情人](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%83%85%E4%BA%BA.md)
 - [情商：为什么情商比智商更重要](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%83%85%E5%95%86%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%83%85%E5%95%86%E6%AF%94%E6%99%BA%E5%95%86%E6%9B%B4%E9%87%8D%E8%A6%81.md)
+- [我的奋斗](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%88%91%E7%9A%84%E5%A5%8B%E6%96%97.md)
 - [战斗细胞](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%88%98%E6%96%97%E7%BB%86%E8%83%9E.md)
 - [支付战争](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%94%AF%E4%BB%98%E6%88%98%E4%BA%89.md)
 - [新摄影笔记](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%96%B0%E6%91%84%E5%BD%B1%E7%AC%94%E8%AE%B0.md)
