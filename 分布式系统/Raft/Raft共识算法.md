@@ -1,6 +1,6 @@
 # Raft共识算法
 
-本文主要是对[In Search of an Understandable Consensus Algorithm (Extended Version)](https://github.com/Uyouii/MIT_6.824_2020_Project/blob/master/tutorial/LEC6%20Fault%20Tolerance:%20Raft(1)/raft-extended.pdf)的翻译和总结。
+本文主要是对[In Search of an Understandable Consensus Algorithm (Extended Version)](http://nil.csail.mit.edu/6.824/2020/papers/raft-extended.pdf)的翻译和总结。
 
 ## Abstract
 
