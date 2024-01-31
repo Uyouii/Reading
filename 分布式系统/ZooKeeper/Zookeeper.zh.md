@@ -36,3 +36,26 @@ ZooKeeper服务由一组服务器组成，通过复制实现高可用性和高�
 
 ## 2 The ZooKeeper service
 
+client使用ZooKeeper client library 提供的 client API 请求ZooKeeper。client library除了提供 client API 访问 ZooKeeper 的接口外，还负责管理 client 和 ZooKeeper server 之间的网络连接。
+
+在本章节中，我们首先提供一个整体的ZooKeeper 服务的视图，然后讨论下 client 和 ZooKeeper 交互的 API。
+
+**Terminology**（术语）：本文中，我们使用*client*表示 ZooKeeper 服务的用户，*server*表示提供 ZooKeeper服务的进程，*znode* 表示 ZooKeeper 中的内存数据节点(data node)，这些数据节点通过*data tree*的方式组织在分层命名空间中。我们还使用terms update, write 来指代修改 data tree 状态的操作。clients 在连接 ZooKeeper 时会建立一个*session*，并且会获取一个 session handle 用来发送请求。
+
+### 2.1 Service overview
+
+ZooKeeper向 client 提供了一组通过分层命名空间(hierarchical name space)组织的数据节点（znode）的抽象。client通过ZooKeeper API来操作分层结构中的数据对象，znode。分层命名空间(hierarchical name spaces)通常用于文件系统中。这是一种理想的组织数据对象的方式，因为用户已经习惯了这种抽象，并且可以更好的管理应用程序的元数据。我们可以使用 UNIX 系统中标准系统文件路径的方式来引用 znode。例如，我们使用/A/B/C来表示 znode C 的路径，其中 C 的父节点是 B，B 的父节点是 A。所有的 znode 都存储数据，除了临时 zonde 之外，所有的 znode 都可以有子节点。
+
+client 可以创建两种类型的 znode：
+
+- **Regular**：client 通过显式的创建和删除来管理 regular znode。
+- **Ephemeral**(临时的)：client 创建这种类型的 znode 后，要么显示的删除它们，要么让系统在 session（会话）终止的时候自动删除它们。
+
+此外，在创建新的 znode 时，client 可以设置一个*sequential*flag。设置了sequential flag的节点会在名称中附加一个单调递增计数器的值。假如 n 是一个新的节点，p 是父节点，n 的序列号则不会小于p 下已经创建的其他sequential节点名称中的序列号。
+
+ZooKeeper 实现了 watches，允许 client 不需要轮询也能及时接收更改通知。在 client 设置了 watch flag 的情况下发出 read 请求时，操作也会正常完成，只是 server 承诺在返回的信息变更时通知 client。watches 是与 session 关联的一次性触发器，一旦触发或者 session 关闭，它们就会取消注册。watches 表明更改已经发生，但是不提供更改的具体内容。例如，如果执行了`getData(‘‘/foo’’, true)`后更改了两次，client 将会收到一个watch事件，告诉 client`“/foo”`数据已经更改。Session事件(例如链接断开事件)也会触发 watch 回调，以便 client 感知 watch 事件可能会延迟。
+
+![image-20231121224624384](../../images/distribuide_system/zookeeper1.png)
+
+**Data model.** ZooKeeper的数据模型本质上是具有简化版的接口，只能进行完整数据读写的文件系统，或者是一个具有分层接口的key/value表。分层命名空间对于为不同的应用程序分配子树，以及为这些子树设置访问权限很有用。我们还利用 client 的目录概念来构建更高级别的语法，例如2.4节的内容。
+
