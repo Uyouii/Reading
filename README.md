@@ -196,6 +196,7 @@
 - [富爸爸穷爸爸](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%AF%8C%E7%88%B8%E7%88%B8%E7%A9%B7%E7%88%B8%E7%88%B8.md)
 - [小王子](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%B0%8F%E7%8E%8B%E5%AD%90.md)
 - [当尼采哭泣](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%BD%93%E5%B0%BC%E9%87%87%E5%93%AD%E6%B3%A3.md)
+- [怪诞行为学1：可预测的非理性](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%80%AA%E8%AF%9E%E8%A1%8C%E4%B8%BA%E5%AD%A61%EF%BC%9A%E5%8F%AF%E9%A2%84%E6%B5%8B%E7%9A%84%E9%9D%9E%E7%90%86%E6%80%A7.md)
 - [情人](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%83%85%E4%BA%BA.md)
 - [情商：为什么情商比智商更重要](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%83%85%E5%95%86%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%83%85%E5%95%86%E6%AF%94%E6%99%BA%E5%95%86%E6%9B%B4%E9%87%8D%E8%A6%81.md)
 - [我的奋斗](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%88%91%E7%9A%84%E5%A5%8B%E6%96%97.md)
