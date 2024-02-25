@@ -35,6 +35,7 @@
 - [月亮与六便士](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%9C%88%E4%BA%AE%E4%B8%8E%E5%85%AD%E4%BE%BF%E5%A3%AB.md)
 - [杀死一只知更鸟](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%9D%80%E6%AD%BB%E4%B8%80%E5%8F%AA%E7%9F%A5%E6%9B%B4%E9%B8%9F.md)
 - [极简欧洲史](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%9E%81%E7%AE%80%E6%AC%A7%E6%B4%B2%E5%8F%B2.md)
+- [洛克菲勒写给儿子的38封信](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%B4%9B%E5%85%8B%E8%8F%B2%E5%8B%92%E5%86%99%E7%BB%99%E5%84%BF%E5%AD%90%E7%9A%8438%E5%B0%81%E4%BF%A1.md)
 - [活着](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%B4%BB%E7%9D%80.md)
 - [流浪地球](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%B5%81%E6%B5%AA%E5%9C%B0%E7%90%83.md)
 - [潜规则](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%BD%9C%E8%A7%84%E5%88%99.md)
