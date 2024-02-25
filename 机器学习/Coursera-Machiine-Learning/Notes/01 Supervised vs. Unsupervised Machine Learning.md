@@ -18,6 +18,15 @@
 
 ### Unsupervised learning
 
-**Unsupervised learning**:Find Something interesting in unlabeled data.
+**Unsupervised learning**:
+
+- Find Something interesting in unlabeled data.
+- Data only comes with inputs x, but not output labels y.
+- Alrorithm has to find structure in the data.
 
 **clustering algorithm**: a type of unsupervised learning algorithm, takes data without labels and tries to automatically group them into clusters.
+
+**Anomaly detection**: Find unusual data points.
+
+**Dimensionality reduction**: Compress data using fewer numbers.
+

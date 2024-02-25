@@ -234,6 +234,7 @@
 ### **[<font color=#008000>Coursera-Machiine-Learning</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning)**
 #### **[<font color=#008000>Notes</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes)**
 - [01 Supervised vs. Unsupervised Machine Learning](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes/01%20Supervised%20vs.%20Unsupervised%20Machine%20Learning.md)
+- [02 Regression Model](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes/02%20Regression%20Model.md)
 ## **[<font color=#008000>消息队列</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97)**
 ### **[<font color=#008000>kafka</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka)**
 #### **[<font color=#008000>图解 Kafka 之实战指南</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E5%9B%BE%E8%A7%A3%20Kafka%20%E4%B9%8B%E5%AE%9E%E6%88%98%E6%8C%87%E5%8D%97)**
