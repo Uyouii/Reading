@@ -17,7 +17,7 @@
 
 #### Process Of Supervised
 
-![supervised process](../../../images/machine-learning/supervised process.png)
+![supervised process](../../../images/machine-learning/supervised_process.png)
 
 #### Liner regression
 

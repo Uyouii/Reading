@@ -18,11 +18,11 @@ $$
 
 - Simultaneously update w and b.
 
-![simultaneously update 3](../../../images/machine-learning/simultaneously update 3.png)
+![simultaneously update 3](../../../images/machine-learning/simultaneously_update_3.png)
 
 ### Gradient descent intuition
 
-![gradient descent intuition](../../../images/machine-learning/gradient descent intuition.png)
+![gradient descent intuition](../../../images/machine-learning/gradient_descent_intuition.png)
 
 ### Learning rate
 
@@ -35,7 +35,7 @@ $$
   - overshoot, never reach minimum.
   - fail to converge, diverge.
 
-![gradient descent 2](../../../images/machine-learning/gradient descent 2.png)
+![gradient descent 2](../../../images/machine-learning/gradient_descent_2.png)
 
 ### Gradient descent for linear regression
 
@@ -57,13 +57,13 @@ w = w - \alpha \frac{d}{d w}J(w,b) \\
 b = b - \alpha \frac{d}{d b}J(w,b)
 $$
 
-![gradient descent 3](../../../images/machine-learning/gradient descent 3.png)
+![gradient descent 3](../../../images/machine-learning/gradient_descent_3.png)
 
-![gradient descent 4](../../../images/machine-learning/gradient descent 4.png)
+![gradient descent 4](../../../images/machine-learning/gradient_descent_4.png)
 
 ### Running gradient descent
 
-![gradient descent 5](../../../../../../Library/Application Support/typora-user-images/gradient descent 5.png)
+![gradient descent 5](../../../images/machine-learning/gradient_descent_5.png)
 
 #### “Batch” gradient descent
 
