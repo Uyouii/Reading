@@ -13,6 +13,36 @@ $$
 
 
 
-## Vectorization
+### Vectorization
 
 ![Vectorization1](../../../images/machine-learning/Vectorization1.png)
+
+### Gradient descent for multiple linear regression
+
+![image-20240407100109034](../../../images/machine-learning/image-20240407100109034.png)
+
+![image-20240407101335265](../../../images/machine-learning/image-20240407101335265.png)
+
+#### Normal Equation
+
+Normal Equation:
+
+- Only for linear regression
+- Solve for w,b withour iterations.
+
+Disadvantages
+
+- Doesn’t generalize to other learning algorithms.
+- Slow when number of features is large (> 10,000)
+
+What you need to know
+
+- Normal equation method may be used in machine learning libraries that implement linear regression
+- Gradient descent is the recommended method for finding parameters w,b
+
+
+
+
+
+
+

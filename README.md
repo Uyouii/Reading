@@ -232,6 +232,8 @@
 - [霍乱时期的爱情](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E9%9C%8D%E4%B9%B1%E6%97%B6%E6%9C%9F%E7%9A%84%E7%88%B1%E6%83%85.md)
 ## **[<font color=#008000>机器学习</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0)**
 ### **[<font color=#008000>Coursera-Machiine-Learning</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning)**
+#### **[<font color=#008000>Labs</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Labs)**
+- [01 Optional Lab: Multiple linear regression](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Labs/01%20Optional%20Lab%3A%20Multiple%20linear%20regression.md)
 #### **[<font color=#008000>Notes</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes)**
 - [01 Supervised vs. Unsupervised Machine Learning](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes/01%20Supervised%20vs.%20Unsupervised%20Machine%20Learning.md)
 - [02 Regression Model](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes/02%20Regression%20Model.md)
