@@ -184,6 +184,7 @@
 - [你的生存本能正在杀死你](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BD%A0%E7%9A%84%E7%94%9F%E5%AD%98%E6%9C%AC%E8%83%BD%E6%AD%A3%E5%9C%A8%E6%9D%80%E6%AD%BB%E4%BD%A0.md)
 - [冰与火之歌](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%86%B0%E4%B8%8E%E7%81%AB%E4%B9%8B%E6%AD%8C.md)
 - [刀锋](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%88%80%E9%94%8B.md)
+- [切尔诺贝利的午夜](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%88%87%E5%B0%94%E8%AF%BA%E8%B4%9D%E5%88%A9%E7%9A%84%E5%8D%88%E5%A4%9C.md)
 - [包法利夫人](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%8C%85%E6%B3%95%E5%88%A9%E5%A4%AB%E4%BA%BA.md)
 - [南京大屠杀](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%8D%97%E4%BA%AC%E5%A4%A7%E5%B1%A0%E6%9D%80.md)
 - [原则：应对变化中的世界秩序](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%8E%9F%E5%88%99%EF%BC%9A%E5%BA%94%E5%AF%B9%E5%8F%98%E5%8C%96%E4%B8%AD%E7%9A%84%E4%B8%96%E7%95%8C%E7%A7%A9%E5%BA%8F.md)
