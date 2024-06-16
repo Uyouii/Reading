@@ -235,6 +235,7 @@
 ### **[<font color=#008000>Coursera-Machiine-Learning</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning)**
 #### **[<font color=#008000>Labs</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Labs)**
 - [01 Optional Lab: Multiple linear regression](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Labs/01%20Optional%20Lab%3A%20Multiple%20linear%20regression.md)
+- [02 Optional Lab: Feature scaling and Learning Rate (Multi-variable)](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Labs/02%20Optional%20Lab%3A%20Feature%20scaling%20and%20Learning%20Rate%20%28Multi-variable%29.md)
 #### **[<font color=#008000>Notes</font>](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes)**
 - [01 Supervised vs. Unsupervised Machine Learning](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes/01%20Supervised%20vs.%20Unsupervised%20Machine%20Learning.md)
 - [02 Regression Model](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes/02%20Regression%20Model.md)
@@ -262,6 +263,8 @@
 #### **[<font color=#008000>prometheus-book</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/Prometheus/prometheus-book)**
 - [01 Prometheus简介](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/Prometheus/prometheus-book/01%20Prometheus%E7%AE%80%E4%BB%8B.md)
 - [02 PromQL](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/Prometheus/prometheus-book/02%20PromQL.md)
+### **[<font color=#008000>论文翻译</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91)**
+- [A Suvey of Methods for Time Series Change Point Detection](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91/A%20Suvey%20of%20Methods%20for%20Time%20Series%20Change%20Point%20Detection.md)
 ## **[<font color=#008000>算法</font>](https://github.com/Uyouii/Reading/blob/master/%E7%AE%97%E6%B3%95)**
 - [算法](https://github.com/Uyouii/Reading/blob/master/%E7%AE%97%E6%B3%95/%E7%AE%97%E6%B3%95.md)
 ## **[<font color=#008000>设计</font>](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1)**
