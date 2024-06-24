@@ -39,9 +39,11 @@ Change point detection; Time series data; Segmentation; Machine learning; Data m
 我们首先介绍在本综述中使用的关键术语的定义。
 
 **Definition 1: ** A time series data stream is an infinite sequence of elements
+
 $$
 S = \{x_1,...,x_i,... \}
 $$
+
 where $x_i$ is a d-dimensional data vector arriving at time stamp i [17]
 
 **Definition 2: ** A ***stationary time series*** is a finite variance process whose statistical properties are all constant over time. This definition assumes that
@@ -112,21 +114,29 @@ generates the time series data.
 以下是一些可以用来评估 CPD 算法的有用性能指标。这些指标虽然是在二元分类的背景下描述的，但可以通过独立或组合提供每个类别的衡量标准来扩展到更多类别的分类。
 
 **准确率（Accuracy）**, calculated as the ratio of correctly-classified data points to total data points。这一指标提供了算法性能的高层次概念。其对应指标是错误率（Error Rate），计算公式为 1 - Accuracy。尽管准确率和错误率能够衡量总体性能，但它们并不能提供有关错误来源或错误在不同类别中的分布情况的见解。此外，对于类别不平衡的数据集（这在变点检测中很常见），它们在评估性能方面无效，因为它们认为不同类型的分类错误同样重要。在这种情况下，Sensitivity和 g-mean (几何平均数) 是有用的评估指标。
+
 $$
 Accurrancy = \frac{TP + TN}{TP + FP + FN + TN}
 $$
+
 **敏感性（Sensitivity）**, 也称为召回率（Recall）或真正例率（True Positive Rate, TP Rate）。这指的是目标类别（变点）中被正确识别的部分。
+
 $$
 Sensitivity = Recall = TP Rate = \frac{TP}{TP + FN}
 $$
+
 **G-mean（几何平均数）**。变点检测通常会导致类分布不平衡的学习问题，因为变点与总数据的比例很小。因此，G-mean 通常被用作变点检测性能的指标。它利用敏感性（Sensitivity）和特异性（Specificity）来评估算法的性能，既考虑了正类准确率（敏感性）也考虑了负类准确率（特异性）。
+
 $$
 G-mean = \sqrt{Sensitivity \times Specificity} = \sqrt{\frac{TP}{TP + FN} \times \frac{TN}{FP + TN}}
 $$
+
 **精确率（Precision）**。这是计算为真正例数据点（变点）与被分类为变点的总点数之比。
+
 $$
 Precision = \frac{TP}{TP + FP}
 $$
+
 **F-measure（也称为 f-score 或 f1 score）**。这种度量提供了一种结合精确率（Precision）和召回率（Recall）来衡量 CPD 算法整体有效性的方法。F-measure 计算为精确率和召回率的加权重要性比率。
 
 ![image-20240618122109397](../../images/monitor/image-20240618122109397.png)
@@ -179,15 +189,17 @@ $$
 
 #### 3.2.1 Likelihood Ratio Methods
 
-典型的统计变点检测公式是分析候选变点(dandidate change point)前后数据的概率分布(probability distributions)，如果这两个分布显著不同，则将该候选点识别为变点。在这些方法中，通过监测时间序列数据中两个连续区间之间的似然比的对数(logarithm of the likelihood ratio) 来检测变点[2]。
+典型的统计变点检测公式是分析候选变点(dandidate change point) 前后数据的概率分布(probability distributions)，如果这两个分布显著不同，则将该候选点识别为变点。在这些方法中，通过监测时间序列数据中两个连续区间之间的似然比的对数(logarithm of the likelihood ratio) 来检测变点[2]。
 
 这种策略需要两个步骤。首先，分别计算两个连续区间的概率密度(probability density)。其次，计算这些概率密度的比率。最常见的变点算法是**累积和（Cumulative Sum, CUSUM**）[41] [42] [43] [44]，该算法相对于指定目标累积偏差( accumulates deviations relative)，当累积和超过指定阈值时，指示存在变点。
 
 **Change Finder** [2] [45] [22] 是另一种常用的方法，它将变点检测问题转化为基于时间序列的异常检测。此方法将**自回归（Auto Regression, AR）**模型拟合到数据上，以表示时间序列的统计行为，并逐步更新其参数估计，从而逐渐折扣(gradually discounted) 过去样本的影响。考虑时间序列 $xt$，我们可以使用 k 阶自回归模型(AR mode of kth) 来对时间序列建模：
+
 $$
 x_t = wx^{t-1}_{t-k} + \varepsilon
 $$
-Where $x^{t-1}_{t-k} = (x_{t-1}, x_{t-2},...,x_{t-k})$ are previous observation,  $\omega = (\omega_1, \dots, \omega_k) \in \mathbb{R}^k$ 是常数，$\epsilon$ 是按照高斯分布生成的类似白噪声的正态随机变量。通过更新模型参数，可以在时间 $t$ 计算概率密度函数(probability density function)，并得到一系列概率密度 $\{p_t : t = 1, 2, \dots\}$。接下来，通过给每个数据点评分生成一个辅助时间序列(auniliary time-series) $y_t$。这个评分函数定义为对数似然的平均值(average of the log-likelihood)，$Score(y_t) = -\log p_{t-1}(y_t)$，或统计偏差(statistical deviation)，即 $Score(y_t) = d(p_{t-1}, p_t)$，其中 $d(*, *)$是由各种距离函数提供的，包括变差距离(variation distance)、Hellinger 距离(Hellinger distance)或二次距离(quadratic distance)。新的时间序列数据表示每对连续时间序列区间之间的差异。为了检测变点，需要知道两对连续差异之间是否存在突变。为此，再拟合一个自回归模型(AR Model)到基于差异的时间序列，并构建一个新的概率密度函数序列 $\{q_t : t = 1, 2, \dots \}$。变点评分使用前述的评分函数定义。较高的评分表示变点的可能性较高。
+
+Where $ x^{t-1}_{t-k} = (x_{t-1}, x_{t-2},...,x_{t-k}) $ are previous observation,  $\omega = (\omega_1, \dots, \omega_k) \in \mathbb{R}^k$ 是常数，$\epsilon$ 是按照高斯分布生成的类似白噪声的正态随机变量。通过更新模型参数，可以在时间 $t$ 计算概率密度函数(probability density function)，并得到一系列概率密度 $\{p_t : t = 1, 2, \dots\}$。接下来，通过给每个数据点评分生成一个辅助时间序列(auniliary time-series) $y_t$。这个评分函数定义为对数似然的平均值(average of the log-likelihood)，$Score(y_t) = -\log p_{t-1}(y_t)$，或统计偏差(statistical deviation)，即 $Score(y_t) = d(p_{t-1}, p_t)$，其中 $d(*, *)$是由各种距离函数提供的，包括变差距离(variation distance)、Hellinger 距离(Hellinger distance)或二次距离(quadratic distance)。新的时间序列数据表示每对连续时间序列区间之间的差异。为了检测变点，需要知道两对连续差异之间是否存在突变。为此，再拟合一个自回归模型(AR Model)到基于差异的时间序列，并构建一个新的概率密度函数序列 $\{q_t : t = 1, 2, \dots \}$。变点评分使用前述的评分函数定义。较高的评分表示变点的可能性较高。
 
 由于这些方法依赖于预先设计的参数模型，因此在实际的变点检测场景中灵活性较差，一些最近的研究引入了更灵活的非参数变体，通过直接估计概率密度比率来避免进行密度估计。这种密度比率估计 (density-ratio estimation)的基本原理是，了解两个密度意味着了解密度比率，但反之则不然：知道比率并不一定意味着知道两个密度，因为这种分解不是唯一的。因此，直接密度比率估计比密度估计要简单得多。基于这一思想，已经开发了直接密度比率估计的方法[2] [22]。这些方法通过非参数高斯核模型 (non-parametric Gaussian kernel model) 来建模两个连续区间 $\chi$  和 $\chi'$之间的密度比率，如下所示：
 
@@ -224,10 +236,12 @@ Kullback-Leibler 重要性估计程序 (KLIEP) 使用 KL divergence 来估计密
 另一项研究基于子空间 (subsapce) 分析进行变点检测，其中时间序列序列受到约束。这种方法与系统辨识方法有很强的联系，后者在控制理论领域得到了深入研究 [2]。
 
 其中一种子空间模型方法称为**子空间辨识（Subspace Identification, SI）** [22] [50]。SI 基于系统的状态空间模型，并明确考虑了噪声因素。
+
 $$
 x(t + 1) = Ax(t) + Ke(t) \\
 y(t) = Cx(t) + e(t)
 $$
+
 这里 $C$ 和 $A$ 是系统矩阵，$e(t)$ 表示系统噪声，K 是稳定的卡尔曼增益 (stationary Kalman gain)。在子空间方法中，我们使用不同的符号表示。由于在这些方法中 $x$ 表示模型状态，我们用 $y$ 表示时间序列。
 
 在系统辨识中，扩展可观测矩阵是衡量系统的内部状态 $x(t)$ 如何通过其外部输出 $y(t)$ 来推断的一个指标。在这里，我们使用扩展可观测矩阵作为时间序列数据受约束的子空间的表示。
@@ -268,10 +282,323 @@ $$
 
 这种方法后来通过在方程中结合不同子序列数据的似然性扩展到了非独立同分布（non i.i.d.）时间序列的一般情况。此外，通过使用简单近似，提出了一种简化方法，将算法复杂度从 $n^2$ 降低到 $n$。其关键思想是仅计算固定数量节点的联合概率权重 (joint probability weights)，而不是计算所有 $ \frac{n(n - 1)}{2} $ 节点的权重 [7]。
 
-高斯过程（Gaussian Process, GP）是另一种用于平稳时间序列分析和预测的概率方法 [55]。高斯过程(GP) 是高斯分布的推广，定义为一组随机变量，其中任意有限数量的变量具有联合高斯分布 [56] [57]。在这种方法中，时间序列观测值 $\{x_t\}$ 被定义为高斯分布函数值 $f(t)$ 的噪声版本。
+**高斯过程（Gaussian Process, GP）**是另一种用于平稳时间序列分析和预测的概率方法 [55]。高斯过程(GP) 是高斯分布的推广，定义为一组随机变量，其中任意有限数量的变量具有联合高斯分布 [56] [57]。在这种方法中，时间序列观测值 $\{x_t\}$ 被定义为高斯分布函数值 $f(t)$ 的噪声版本。
 $$
 x_t = f(t) + \varepsilon_t
 $$
+
 在这个高斯分布函数中，$\varepsilon_t$ 是噪声项，通常假设为高斯噪声项，且 $ \mathcal{N}(0, \sigma^2_n)$ 和 $ f(t) = \mathcal{GP}(0, K) $ 是由均值为零和协方差(covariance)函数 $K$ 指定的高斯过程分布函数。通常，协方差函数是使用一组超参数指定的。一种广泛使用的协方差函数是：
 
 ![image-20240621185628851](../../images/monitor/image-20240621185628851.png)
+
+给定一个时间序列，GP（高斯过程）函数可以用于在时间  $t$ 进行正态分布预测。GP Change 算法使用高斯过程来估计时间 $t$ 的预测分布，使用的是通过时间 $(t - 1)$ 可用的观测值。然后，该算法计算实际观测值 $y_t$ 在参考分布 $\mathcal{N}(\hat{y}_t, \hat{\sigma}_t^2)$ 下的 p 值。使用阈值 $\alpha \in (0,1)$ 来确定实际观测值是否不符合预测分布，这表明可能存在状态变化（即变点）[56]。使用通过时间 $t-1$ 可用的观测值来检测变点，而不是仅使用来自最后状态的观测值，使得 GP 方法比 BCPD 更复杂但更准确。
+
+#### **3.2.4 Kernel Based Methods**
+
+虽然 kernel-based methods 通常作为监督学习技术使用，但一些研究使用无监督的 kernel-based 的检验统计量来检验时间序列过去和现在滑动窗口中的数据同质性(homogeneity)。这些方法将观测值映射到与再生核 $k(.,.)$ 和特征映射 $\Phi(X) = k(X, .)$ 相关的再生核希尔伯特空间（Reproducing Kernel Hilbert Space，RKHS）$$\mathcal{H}$$ 中 [58]。然后，他们使用基于kernel Fisher 判别比率的检验统计量作为窗口之间同质性的度量。 (这句的原文：They then use a test statistic based upon the kernel Fisher discriminant ratio as a measure of homogeneity between windows.)
+
+考虑两个观测窗口，样本 $X$ 的经验均值元素(empirical mean elements) 和协方差算子(covariance operators)（样本长度为 $n$）的计算公式如下：
+
+![image-20240624144440757](../../images/monitor/image-20240624144440757.png)
+
+其中，对于所有函数 $f \in \mathcal{H}$，张量积算子(tensor product operator) $u \otimes v$ 定义为 $(u \otimes v)f = \langle v, f \rangle_{\mathcal{H}} u$。现在，两个样本之间的核 Fisher 判别比率（Kernel Fisher Discriminant Ratio，KFDR）定义如下 [58] [24]：
+
+![image-20240624144710924](../../images/monitor/image-20240624144710924.png)
+
+其中，$\gamma$ 是正则化参数。
+
+![image-20240624144839829](../../images/monitor/image-20240624144839829.png)
+
+最简单的确定两个窗口之间是否存在变点的方法是将 KFDR 比率与阈值进行比较 [58]。另一种称为运行最大分区策略 (running maximum partition strategy) 的方法[24] 计算每个区间中所有连续窗口之间的 KFDR 比率。然后将最大比率与阈值进行比较以检测变点。
+
+基于核的方法一个常见的缺点是它们高度依赖于核函数及其参数的选择，当数据位于中高维空间时，这个问题变得更加严重[23]。
+
+#### **3.2.5 Graph Based Methods**
+
+最近的几项研究表明，可以使用图论(graph theory) 工具来研究时间序列。图通常是从样本空间上的距离或广义不相似度(generalized dissimilarity) 导出的，时间序列观测值作为节点，基于其距离连接观测值。该图可以基于最小生成树(minimum spanning tree) [59]、最小距离配对(minimum distance pairing) [60]、最近邻图(nearest neighbor graph) [59] [60]或可见性图(visibility graph) [61] [62]来定义。
+
+基于图的变点检测框架是一种非参数方法，它在等效图上应用双样本检验，以确定观测值中是否存在变点。在这种方法中，为每个数据序列构建图 $G$。每个可能的变点时间 $\tau$ 将观测值分为两个窗口：$\tau$ 之前的观测值和 $\tau$ 之后的观测值。图 $G$ 中连接这两个窗口的观测值的边数 $R_G$ 被用作变点的指示器，边数越少，变点的可能性越大。由于 $R_G$ 的值取决于时间 $t$，定义了标准化函数 $Z_G$：
+
+![image-20240624150651044](../../images/monitor/image-20240624150651044.png)
+
+其中，$E[\cdot]$ 和 $\text{VAR}[\cdot]$ 分别是期望值和方差。在图中所有数据点中，$Z_G$ 的最大值被确定为候选变点。如果最大值大于指定的阈值，则接受该变点 [23]。这种方法对于高维数据非常有效，并且需要的参数假设较少。然而，它没有利用太多时间序列观测本身的信息，而是依赖于定义合适的图结构。
+
+#### **3.2.6 Clustering Methods**
+
+从不同的角度来看，变点检测问题可以被视为具有已知或未知簇数量的聚类问题，即簇内的观测值是同分布的(identically distributed)，而相邻簇之间的观测值则不是。如果时间戳 $t$ 处的数据点属于与时间戳 $t+1$ 处的数据点不同的簇，则在这两个观测值之间发生了变点。
+
+用于变点检测的一种聚类方法将滑动窗口和自底向上的方法结合成一种称为 **SWAB（Sliding Window and Bottom-up）**的算法[63]。原始的自底向上方法首先将每个数据点视为一个独立的子序列，然后合并具有相关合并成本的子序列，直到满足停止标准。相比之下，SWAB 保持一个大小为 $w$ 的缓冲区，以存储足够的数据来形成 5 到 6 个子序列。自底向上方法应用于缓冲区中的数据，并报告最左边的结果子序列。报告的子序列对应的数据从缓冲区中移除，并用序列中的下一个数据替换。
+
+第二种聚类方法基于**最小描述长度（Minimum Description Length, MDL）**对子序列进行分组 [32]。长度为 $m$ 的时间序列 $T$ 的描述长度 $DL$ 是表示该序列所需的总位数，即：
+
+$$
+DL(T) = m * H(T)
+$$
+其中，$H(T)$ 是时间序列 $T$ 的熵(entropy).
+
+基于最小描述长度（MDL）的变点检测是在簇空间上的一种自底向上的贪心搜索(greedy search)，这些簇可以包含不同长度的子序列，并且不需要指定簇的数量。该方法对枚举的模式进行聚类，而不是对所有子序列进行聚类。
+
+在找到时间序列的模式后，应用了三个搜索操作：创建（create, 创建一个新簇）、添加（add, 将一个子序列添加到现有簇中）和合并（merge, 合并两个簇）。***比特保存值（bitsave）***表示通过将其中一个操作应用于时间序列所节省的总位数。
+
+$$
+bitsave = DL(Before) - DL(After)
+$$
+每个操作的 bitsave 定义如下：
+
+1. Creating a new cluster $C$ from subsequences $A$ and $B$
+
+$$
+bitsave = DL(A) + DL(B) - DLC(C)
+$$
+
+$DLC(C)$ 是表示cluster $C$ 中所有子序列所需的比特数。
+
+2. Adding a subsequence $A$ to an existing cluster C
+
+$$
+bitsave = DL(A) + DLC(C) - DLC(C')
+$$
+
+$C'$ is the cluster $C$ after including subsequence $A$.
+
+3. Merging cluster $C1$ and $C2$ to a new cluster C
+
+$$
+bitsave = DLC(C_1) + DLC(C_2) - DLC(C)
+$$
+
+第一步是从模式(motifs)中创建一个cluster，并计算使用此步骤节省的比特数。在算法的下一个阶段，有两个可用的操作：创建或添加。新的子序列可以添加到现有cluster之一，或者可以作为新创建的cluster的唯一成员。为了将子序列添加到现有cluster，计算子序列与每个cluster之间的距离，以找到最接近子序列的cluster。搜索之后，更新最近的cluster以包含子序列，计算节省的比特数，并记录这些cluster。在每一步之后，如果合并两个cluster可以最大限度地减少描述长度（增加节省的比特数），则允许合并任何一对cluster。由于 MDL 技术需要离散(discrete)数据，因此该方法适用于离散化(discretized)的时间序列值。
+
+另一种使用 **Shapelet 方法**对时间序列数据进行聚类以找到变点的方法 [64]。unsupervised-shapelet（u-shapelet）$S$ 是时间序列 $T$ 中的一个小模式，其中 $S$ 与时间序列某部分之间的距离远小于 $S$ 与时间序列其余部分之间的距离。Shapelet-based clustering 尝试根据整个时间序列的形状对数据进行聚类，搜索可以将时间序列子序列从数据集其余部分分离并移除的 u-shapelet。该算法在剩余数据中反复进行此搜索，直到没有数据可分离为止。使用一种贪婪搜索算法，尝试最大化两个数据子集之间的分离间隙来提取 u-shapelets。然后，任何聚类算法（例如具有欧几里得距离函数的 k-means）都可以用于对时间序列进行聚类并找到变点。
+
+另一种时间序列聚类方法是**模型拟合(Model fitting)**。在这种方法中，当新的数据项或数据块不符合任何现有簇时，可以认为发生了变点 [17]。假设数据流为 $ \{x_1, \dots, x_i, \dots\} $，如果以下逻辑表达式为真，则在数据点 $x_i$ 之后发生变点。
+
+![image-20240624163940591](../../images/monitor/image-20240624163940591.png)
+
+其中，$ d(x_{i+1}, \text{center}(C_j))$ 是新进入的数据点 $x_{i+1}$ 与簇 $C_j$ 中心的欧几里得距离(Euclidian distance)，$\text{radius}(C_j)$ 是簇 $j$ 的半径，$K$ 是簇的数量，^ 是逻辑与符号。簇 $C$ 的半径（包含 $n$ 个数据点，均值为 $\mu$）的计算公式为：
+
+![image-20240624164420209](../../images/monitor/image-20240624164420209.png)
+
+## 4 DISCUSSION AND COMPARISON
+
+前几节概述了文献中常用的变点检测算法。为特定数据集选择最合适的算法取决于应用中最重要的标准。在这里，我们基于几个常用的标准对变点检测方法进行比较。
+
+### 4.1 Online vs Offline
+
+变点检测的一个重要标准是实时或近实时识别变点的能力。完整的离线算法适用于一次处理整个时间序列的情况，而 ε-real time algorithms需要至少提前查看 ε 个数据点以确定候选变点。ε 的值取决于算法的性质以及每一步所需的输入数据量。在线算法在大小为 $n$ 的滑动窗口内处理数据。对于这些方法，$n$ 应该足够大以存储表示时间序列状态所需的数据，但又足够小以满足 epsilon 的要求。
+
+**Supervised methods:** 一旦它们处理了足够的训练数据，这些方法将在当前窗口内预测是否存在变点。因此我们可以说supervised methods是 ***n*-real time**。
+
+**Likelihood ratio methods:** 这些方法基于比较两个连续区间之间的概率密度(probability densities)。当新的回顾性子序列到来时，新的计算将返回结果，因此我们可以说这些方法是 ***n+k*-real time**。
+
+**Subspace Model:**  这些技术中新区间的计算方式与似然方法相同。因此这些方法也是 ***n+k*-real time**。
+
+**Probabilistic Methods:** 这些方法仅依赖于单个滑动窗口来检测变点，所以它们是 **n-real time**。
+
+**Kernel Based Methods:** 无监督的基于核的方法基于滑动窗口。然而，与似然比方法一样，这些方法需要回顾性子序列的数据，因此它们是 ***n+k*-real time**。
+
+**Clustering:** SWAB 技术是滑动窗口和自底向上的结合。SWAB 保持一个大小为 w 的缓冲区。自底向上方法应用于缓冲区中的数据，并报告最左边的子序列。因此，SWAB 是 **w-real time**。基于 MDL 的方法和基于 Shapelet 的方法需要一次性访问整个时间序列，所以它们offline或 **infinity-real time**。model fitting技术依赖于单个窗口，因此是 **n-real time**。
+
+**Graph Based Method:** 该技术从单个窗口中导出图。如果当前窗口内存在变点，则报告该变点，因此该方法是 **n-real time**。
+
+图5可视化了不同变点检测（CPD）方法之间的关系及其在complete offline和online processing之间的连续统上的位置。
+
+![image-20240624172917076](../../images/monitor/image-20240624172917076.png)
+
+### 4.2 Scalability
+
+第二个重要标准是变点检测算法的计算成本(computational cost)。在表2中，我们比较了我们调查的算法（如果可用）的计算成本。如果作者没有提供此信息，则根据算法描述进行定性比较。总体而言，随着时间序列维度的增加，非参数方法在计算成本上更具优势，并且比参数方法更便宜。很难描述监督方法的成本，因为涉及两个复杂性：训练阶段的运行时间和变点检测阶段的运行时间。
+
+据我们所知，目前没有任何现有的变点检测算法提供可中断或合同随时选项。这可以被视为未来研究的一个方向。
+
+![image-20240624173212155](../../images/monitor/image-20240624173212155.png)
+
+### **4.3 Learning Constraint**
+
+大多数likelihood ratio 方法（除了 SPLL）和所有subspace model技术最初设计用于一维时间序列。因此，在处理 $d$ 维时间序列时，这些方法将所有维度合并在一起，生成一个具有 $d$-size向量的一维序列。虽然其他算法对时间序列的维度没有约束，但增加维度数量会增加算法的计算成本。
+
+所有算法都接受离散(discrete)和连续(continuous)时间序列输入。一个例外是基于 MDL 的方法，它仅适用于离散输入值。
+
+监督学习方法假设可以独立于当前时间序列状态检测到过渡期。相比之下，无监督学习算法假设时间序列数据在每个变点前后分布发生变化 [21]。虽然监督学习在检测变点方面经常优于无监督方法，但它们依赖于足够质量和数量的训练数据，而这些数据在现实世界中并不总是可获得的。多类监督算法是唯一需要知道可能的时间序列状态数量的算法组。
+
+通常，非参数的变点检测（CPD）方法比参数方法更稳健，因为参数方法严重依赖参数的选择。此外，当数据具有中高维度时，参数方法的CPD问题变得更加复杂。
+
+大多数无监督的变点检测（CPD）算法仅适用于有限类型的时间序列数据。其中一些算法仅适用于平稳或独立同分布（i.i.d.）的数据集，另一些算法则提供了适用于非平稳时间序列数据集的参数版本。相应的参数版本使用遗忘因子来消除旧观测值的影响。表3总结了我们调查的这些方法的限制。
+
+![image-20240624180252398](../../images/monitor/image-20240624180252398.png)
+
+### **4.4 Performance Evaluation**
+
+使用若干人工和实际数据集来衡量变点检测（CPD）算法的性能。需要注意的是，由于使用了不同的数据集，客观比较不同CPD方法的性能非常困难。在这里，我们尝试描述一些流行的基准实际时间序列数据集，并比较不同CPD方法在这些数据集上的报告性能。
+
+大多数研究没有提供任何比较，或者在某些情况下甚至没有提供性能测量。例如，对于 SPLL 和clustering methods，没有可用的结果。同样，基于图的 CPD 实验结果仅适用于不同的图结构，以证明准确性高度依赖于图的结构 [23]。包含性能分析的研究倾向于计算实际变点与检测到的变点之间的距离，并使用准确性、精度和召回率等离散指标来评估算法。表4总结了先前研究中使用以下数据集的报告性能：
+
+![截屏2024-06-24 18.22.04](../../images/monitor/截屏2024-06-24 18.22.04.png)
+
+**Dataset 1: Speech recognition:** 这是由日本国立信息学研究所（NII）提供的 IPSJ SIG-SLP 噪声语音识别语料库和环境（CENSREC）数据集 [65]。该数据集记录了嘈杂环境中的人声。任务是从录制的信号中提取语音部分。
+
+**Dataset 2: ECG:** 这是在 UCR 时间序列数据挖掘存档中找到的呼吸数据集[66]。该数据集记录了患者在醒来时通过胸廓扩张测量的呼吸。该序列由医学专家手动分段。
+
+**Dataset 3: Speech recognition:**该数据集代表了 1980 年代流行的法国娱乐电视节目“Le Grand ‘Echiquier”的音轨。该数据集包含大约三个小时的音轨数据。
+
+**Dataset 4: Brain-Computer Interface Data:**这些脑-机接口（BCI）试验实验期间获得的信号自然显示出时间结构。相应的数据集构成了 BCI 竞赛 III 的基础。数据是在三个正常受试者的四个无反馈会话期间获得的，每个受试者被要求执行不同的任务，任务切换的时间是随机的。
+
+**Dataset 5: Iowa Crop Biomass NDVI Data:** NDVI 时间序列数据在 2001 年至 2006 年期间作为数据产品提供。在该数据集中，每隔十六天进行一次观测。
+
+**Dataset 6: Smart Home Data:**该数据代表在 WSU 校园内的一间智能公寓中收集的传感器读数 [67]。公寓配备了红外运动/环境光传感器、门/环境温度传感器、灯开关传感器和电源使用传感器。数据标记了相应的人类活动，并且活动之间自然发生变化。
+
+**Dataset 7: Human activity dataset:** 这是 2011 年人体活动传感联盟（Human Activity Sensing Consortium）挑战赛的一部分 [68]。该数据集提供了通过便携式三轴加速度计收集的人体活动信息。变点检测的任务是根据六种行为对时间序列数据进行分段：“停留”、“步行”、“慢跑”、“跳跃”、“上楼”和“下楼”。
+
+总之，我们注意到，如果有足够的训练数据并且时间序列是平稳的，监督方法往往比无监督方法更准确。如果这些条件不满足，则无监督方法更有用。虽然没有全面的无监督方法性能比较，但从实验结果可以看出，RulSIF 一贯表现出较高的准确性。由于基于核的方法、子空间模型、CUSUM、AR 和聚类方法依赖参数来建模时间序列动态，它们在处理噪声数据或高度动态系统时表现不佳。
+
+大多数无监督算法对可以处理的时间序列类型施加了限制。一个显著的例外是 AR 方法。此外，这些方法中的一些有用于非平稳数据的参数版本，这使得它们对参数的选择很敏感。对于高维时间序列数据，似然比和子空间模型不是最佳选择，因为它们无法直接处理多维数据。在这种情况下，基于图的方法或概率方法更有前景。
+
+## **5. CONCLUSIONS AND CHALLENGES FOR FUTURE WORK**
+
+在这篇综述中，我们展示了变点检测方法的最新进展，分析了它们的优缺点，并总结了变点检测中出现的挑战。文献中使用了监督和无监督方法来检测时间序列中的变化。尽管在过去十年中变点检测算法取得了显著进展，但仍然存在许多未解决的挑战。
+
+一个重要问题是变点检测算法需要在线算法和许多现有方法的检测延迟。在许多现实应用中，变点用于选择和执行及时的行动，因此尽快找到变点是至关重要的。Anytime Algorithms 可以潜在地用于补偿算法延迟，并在检测变点的质量和平衡计算时间之间进行调整。另一种替代方法是采用需要较小窗口大小来计算变点评分的方法，例如贝叶斯方法。
+
+另一个未解决的问题是算法的鲁棒性(robustness)。尽管关于这一点存在一些讨论，并且一般来说非参数方法比参数方法更为稳健，但文献中没有找到关于鲁棒性的正式分析。最后，几乎所有方法的变化检测都依赖于窗口大小。尽管小窗口相比大窗口能够检测到更多的局部变化，但它无法提前查看数据并且会增加成本。结合可变窗口大小可能会为每个子序列使用最佳窗口长度提供一个良好的解决方案。
+
+然而，在许多实际数据分析问题中，单独的变点检测问题并没有特别的意义。例如，气候变化研究者可能更感兴趣的是温度变化的量，而不仅仅是检测到发生了变化。在这里，主要的兴趣是关于变化量和变化来源的详细信息。一些现有的技术我们已经调查过，提供了关于变化量或变化来源的信息，但仍需要进一步工作来开发更准确的变化分析或变化估计算法。每当发生变化时，计算每个特征的不相似度量是一种可能的解决方案，用于查找变化来源，然后可以使用总的不相似度量进行变化估计。
+
+评估检测到的变点的显著性是无监督方法的另一个重要未解决问题。目前，大多数现有方法通过将检测到的变点得分与阈值进行比较来确定是否发生变化。选择最优的阈值是困难的。这些值可能依赖于具体应用，并且可能随着时间而变化。基于先前值开发统计方法来找到显著变点可能提供更大的自主性和可靠性。
+
+最后，处理非平稳时间序列是变点检测的持续挑战。文献中确实存在检测概念漂移的方法，这些方法可以用于帮助解决这一问题[69] [70]。将变点检测与概念漂移检测(concept drift detection) 相结合是一个具有挑战性但重要的问题，因为许多现实世界的数据集是非平稳和多维的。
+
+## References
+
+1. Montanez GD, Amizadeh S, Laptev N. Inertial Hidden Markov Models: Modeling Change in Multivariate Time Series. AAAI Conference on Artificial Intelligence. 2015:1819–1825.
+
+2. Kawahara Y, Sugiyama M. Sequential Change-Point Detection Based on Direct Density-Ratio Estimation. SIAM International Conference on Data Mining. 2009:389–400.
+
+3. Boettcher M. Contrast and change mining. Wiley Interdiscip Rev Data Min Knowl Discov. May; 2011 1(3):215–230.
+
+4. Hido S, Idé T, Kashima H, Kubo H, Matsuzawa H. Unsupervised Change Analysis using Supervised Learning. Adv Knowl Discov Data Min. 2008; 5012:148–159.
+
+5. Scholz M, Klinkenberg R. Boosting classifiers for drifting concepts. Intell Data Anal. 2007; 11(1): 3–28.
+
+6. Yang P, Dumont G, Ansermino JM. Adaptive change detection in heart rate trend monitoring in anesthetized children. IEEE Trans Biomed Eng. Nov; 2006 53(11):2211–9. [PubMed: 17073326]
+
+7. Malladi R, Kalamangalam GP, Aazhang B. Online Bayesian change point detection algorithms for segmentation of epileptic activity. Asilomar Conference on Signals, Systems and Computers. 2013:1833–1837.
+
+8. Staudacher M, Telser S, Amann A, Hinterhuber H, Ritsch-Marte M. A new method for change-point detection developed for on-line analysis of the heart beat variability during sleep. Phys A Stat Mech its Appl. Apr; 2005 349(3–4):582–596.
+
+9. Bosc M, Heitz F, Armspach JP, Namer I, Gounot D, Rumbach L. Automatic change detection in multimodal serial MRI: application to multiple sclerosis lesion evolution. Neuroimage. Oct; 2003 20(2):643–56. [PubMed: 14568441]
+
+10. Reeves J, Chen J, Wang XL, Lund R, Lu QQ. A Review and Comparison of Changepoint Detection Techniques for Climate Data. J Appl Meteorol Climatol. Jun; 2007 46(6):900–915.
+
+11. Itoh N, Kurths J. Change-Point Detection of Climate Time Series by Nonparametric Method. World Congress on Engineering and Computer Science 2010 Vol I. 2010
+
+12. Ducre-Robitaille JF, Vincent LA, Boulet G. Comparison of techniques for detection of discontinuities in temperature series. Int J Climatol. Jul; 2003 23(9):1087–1101.
+
+13. Chowdhury MFR, Selouani SA, O’Shaughnessy D. Bayesian on-line spectral change point detection: a soft computing approach for on-line ASR. Int J Speech Technol. Oct; 2011 15(1):5–23.
+
+14. Rybach D, Gollan C, Schluter R, Ney H. Audio segmentation for speech recognition using segment features. IEEE International Conference on Acoustics, Speech and Signal Processing. 2009:4197–4200.
+
+15. Radke RJ, Andra S, Al-Kofahi O, Roysam B. Image change detection algorithms: a systematic survey. IEEE Trans Image Process. Mar; 2005 14(3):294–307. [PubMed: 15762326]
+
+16. Nordli Ø, Przybylak R, Ogilvie AEJ, Isaksen K. Long-term temperature trends and variability on Spitsbergen: the extended Svalbard Airport temperature series, 1898–2012. Polar Res. Jan.2014 33
+
+17. Tran D-H. Automated Change Detection and Reactive Clustering in Multivariate Streaming Data. Nov.2013
+
+18. Shumway, RH., Stoffer, DS. Time Series Analysis and Its Applications. New York, NY: Springer New York; 2011.
+
+19. Keogh E, Lin J. Clustering of time-series subsequences is meaningless: implications for previous and future research. Knowl Inf Syst. Aug; 2004 8(2):154–177.
+
+20. Wei L, Keogh E. Semi-supervised time series classification. 12th ACM SIGKDD international conference on Knowledge discovery and data mining - KDD ’06. 2006:748.
+
+21. Feuz KD, Cook DJ, Rosasco C, Robertson K, Schmitter-Edgecombe M. Automated Detection of Activity Transitions for Prompting. IEEE Trans Human-Machine Syst. 2014; 45(5):1–11.
+
+22. Liu S, Yamada M, Collier N, Sugiyama M. Change-point detection in time-series data by relative densityratio estimation. Neural Netw. Jul.2013 43:72–83. [PubMed: 23500502]
+
+23. Chen H, Zhang N. Graph-Based Change-Point Detection. Ann Stat. Sep; 2014 43(1):139–176.
+24. Harchaoui Z, Moulines E, Bach FR. Kernel Change-point Analysis. Advances in Neural Information Processing Systems. 2009:609–616.
+
+25. Downey AB. A novel changepoint detection algorithm. Dec.2008
+26. Chandola V, Vatsavai RR. A gaussian process based online change detection algorithm for monitoring periodic time series | Varun Mithal - Academia.edu. SIAM international conference on data mining. 2011:95–106.
+
+27. Raykar, VC. Scalable machine learning for massive datasets: Fast summation algorithms. University of Maryland; College Park: 2007.
+
+28. Shieh J, Keogh E. Polishing the Right Apple: Anytime Classification Also Benefits Data Streams with Constant Arrival Times. IEEE International Conference on Data Mining. 2010:461–470.
+
+29. Shlomo Zilberstein SR. Optimal Composition of Real-Time Systems. Artif Intell. 1996; 82(1):181– 213.
+
+30. Moskvina V, Zhigljavsky A. An Algorithm Based on Singular Spectrum Analysis for Change-Point Detection. Commun Stat - Simul Comput. Jan; 2003 32(2):319–352.
+
+31. Adams RP, MacKay DJC. Bayesian Online Changepoint Detection. Machine Learning. Oct.2007
+32. Rakthanmanon T, Keogh EJ, Lonardi S, Evans S. Time Series Epenthesis: Clustering Time Series Streams Requires Ignoring Some Data. IEEE 11th International Conference on Data Mining. 2011:547–556.
+
+33. Reddy S, Mun M, Burke J, Estrin D, Hansen M, Srivastava M. Using mobile phones to determine transportation modes. ACM Trans Sens Networks. Feb; 2010 6(2):1–27.
+
+34. Zheng Y, Liu L, Wang L, Xie X. Learning transportation mode from raw gps data for geographic applications on the web. 17th international conference on World Wide Web - WWW ’08. 2008:247.
+
+35. Cook, DJ., Krishnan, NC. Activity Learning: Discovering, Recognizing, and Predicting Human Behavior from Sensor Data. Wiley; 2015.
+
+36. Zheng Y, Li Q, Chen Y, Xie X, Ma W-Y. Understanding mobility based on GPS data. 10th international conference on Ubiquitous computing - UbiComp ’08. 2008:312.
+
+37. Zheng Y, Chen Y, Xie X, Ma W-Y. Understanding transportation modes based on GPS data for Web applications - Microsoft Research. ACM Trans Web. 2010; 4(1)
+
+38. Cleland I, Han M, Nugent C, Lee H, McClean S, Zhang S, Lee S. Evaluation of prompted annotation of activity data recorded from a smart phone. Sensors (Basel). Jan; 2014 14(9):15861–79 [PubMed: 25166500]
+39. Han M, Vinh LT, Lee YK, Lee S. Comprehensive Context Recognizer Based on Multimodal Sensors in a Smartphone. Sensors. Sep; 2012 12(12):12588–12605.
+
+40. Desobry F, Davy M, Doncarli C. An online kernel change detection algorithm. IEEE Trans Signal Process. Aug; 2005 53(8):2961–2974.
+
+41. Basseville, M., Nikiforov, IV. Detection of Abrupt Changes- theory and application. Prentice Hall; 1993.
+
+42. Cho H, Fryzlewicz P. Multiple-change-point detection for high dimensional time series via sparsified binary segmentation. J R Stat Soc Ser B (Statistical Methodol. Mar; 2015 77(2):475–507.
+
+43. Aue A, Hormann S, Horvath L, Reimherr M. Break Detection In The Covariance Structure Of Multivariate Time Series Models. Ann Stat. 2009; 37(6B):4046–4087.
+
+44. Jeske DR, Montes De Oca V, Bischoff W, Marvasti M. Cusum techniques for timeslot sequences with applications to network surveillance. Comput Stat Data Anal. Oct; 2009 53(12):4332–4344.
+
+45. Yamanishi K, Takeuchi J. A unifying framework for detecting outliers and change points from non-stationary time series data. 8th ACM SIGKDD international conference on Knowledge discovery and data mining - KDD ’02. 2002:676.
+
+46. Yamada M, Kimura A, Naya F, Sawada H. Change-point detection with feature selection in high-dimensional time-series data. International Joint Conference on Artificial Intelligence. 2013
+
+47. Kuncheva LI, Faithfull WJ. PCA feature extraction for change detection in multidimensional unlabeled data. IEEE Trans neural networks Learn Syst. Jan; 2014 25(1):69–80.
+
+48. Kuncheva LI. Change Detection in Streaming Multivariate Data Using Likelihood Detectors. IEEE Trans Knowl Data Eng. May; 2013 25(5):1175–1180.
+
+49. Alippi C, Boracchi G, Carrera D, Roveri M. Change Detection in Multivariate Datastreams: Likelihood and Detectability Loss. Oct.2015
+
+50. Kawahara Y, Yairi T, Machida K. Change-Point Detection in Time-Series Data Based on Subspace Identification. 7th IEEE International Conference on Data Mining (ICDM 2007). 2007:559–564.
+
+51. Chib S. Estimation and Comparison of multiple change point models. J Econom. 1998; 86(2):221–241.
+
+52. Barry D, Hartigan JA. A Bayesian Analysis for Change Point Problems. J Am Stat Assoc. 1993; 88(421):309–319.
+
+53. Lau HF, Yamamoto S. Bayesian online changepoint detection to improve transparency in human-machine interaction systems. 49th IEEE Conference on Decision and Control (CDC). 2010:3572–3577.
+
+54. Tan BA, Gerstoft P, Yardim C, Hodgkiss WS. Change-point detection for recursive Bayesian geoacoustic inversions. J Acoust Soc Am. Apr; 2015 137(4):1962–70. [PubMed: 25920847]
+
+55. Saatçi Y, Turner RD, Rasmussen CE. Gaussian Process Change Point Models. International Conference on Machine Learning. 2010:927–934.
+
+56. Chandola V, Vatsavai R. Scalable Time Series Change Detection for Biomass Monitoring Using Gaussian Process. Conference on Intelligent Data Understanding 2010 - CIDU. 2010
+
+57. Brahim-Belhouari S, Bermak A. Gaussian process for nonstationary time series prediction. Comput Stat Data Anal. Nov; 2004 47(4):705–712.
+
+58. Harchaoui Z, Vallet F, Lung-Yut-Fong A, Cappe O. A regularized kernel-based approach to unsupervised audio segmentation. IEEE International Conference on Acoustics, Speech and Signal Processing. 2009:1665–1668.
+
+59. Friedman JH, Rafsky LC. Multivariate Generalizations of the Wald-Wolfowitz and Smirnov Two-Sample Tests. Ann Stat. Jul; 1979 7(4):697–717.
+
+60. Rosenbaum PR. An exact distribution-free test comparing two multivariate distributions based on adjacency. J R Stat Soc. 2005; 67:515–530.
+
+61. Zhang J, Small M. Complex Network from Pseudoperiodic Time Series: Topology versus Dynamics. Phys Rev Lett. Jun.2006 96(23):238701. [PubMed: 16803415]
+
+62. Lacasa L, Luque B, Ballesteros F, Luque J, Nuño JC. From time series to complex networks: the visibility graph. Proc Natl Acad Sci U S A. Apr; 2008 105(13):4972–5. [PubMed: 18362361]
+
+63. Keogh E, Chu S, Hart D, Pazzani M. An online algorithm for segmenting time series. IEEE International Conference on Data Mining. 2001:289–296.
+
+64. Zakaria J, Mueen A, Keogh E. Clustering Time Series Using Unsupervised-Shapelets. IEEE 12th International Conference on Data Mining. 2012:785–794.
+
+65. [Accessed: 16–Sep-2015] CENSREC-4 - Speech Resources Consortium. [Online]. Available: http://research.nii.ac.jp/src/en/CENSREC-4.html
+
+66. [Accessed: 16–Sep-2015] Welcome to the UCR Time Series Classification/Clustering Page. [Online]. Available: http://www.cs.ucr.edu/~eamonn/time_series_data/
+
+67. [Accessed: 16–Sep-2015] Welcome to CASAS. [Online]. Available: http://casas.wsu.edu/datasets/
+68. [Accessed: 16–Sep-2015] Hasc Challenge 2011. [Online]. Available: http://hasc.jp/hc2011/
+69. Harel M, Mannor S, El-yaniv R, Crammer K. Concept Drift Detection Through Resampling. Proceedings of the 31st International Conference on Machine Learning - ICML-14. 2014:1009–1017.
+
+70. Bach S, Maloof M. A Bayesian Approach to Concept Drift. Advances in Neural Information Processing Systems. 2010:127–135.
