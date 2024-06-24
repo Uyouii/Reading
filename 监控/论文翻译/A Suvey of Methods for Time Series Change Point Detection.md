@@ -38,20 +38,19 @@ Change point detection; Time series data; Segmentation; Machine learning; Data m
 
 我们首先介绍在本综述中使用的关键术语的定义。
 
-**Definition 1: ** A time series data stream is an infinite sequence of elements
-
+**Definition 1:** A time series data stream is an infinite sequence of elements
 $$
 S = \{x_1,...,x_i,... \}
 $$
 
 where $x_i$ is a d-dimensional data vector arriving at time stamp i [17]
 
-**Definition 2: ** A ***stationary time series*** is a finite variance process whose statistical properties are all constant over time. This definition assumes that
+**Definition 2:** A ***stationary time series*** is a finite variance process whose statistical properties are all constant over time. This definition assumes that
 
 - The mean value function $μ_t = E (x_t ) $​ is constant and does not depend on time t .
 - The **auto covariance function** $γ(s , t ) = cov (x_s , x_t ) = E [(x_s − μ_s )(x_t − μ_t )]$ depends on time stamps s and t only through their time difference, or |s – t| .
 
-**Definition 3: ** ***Independent and identically distributed (i.i.d.) (独立同分布) variables*** are mutually independent of each other, and are identically distributed in the sense that they are drawn from the same probability distribution. An i.i.d. time series is a special case of a stationary time series.
+**Definition 3:** ***Independent and identically distributed (i.i.d.) (独立同分布) variables*** are mutually independent of each other, and are identically distributed in the sense that they are drawn from the same probability distribution. An i.i.d. time series is a special case of a stationary time series.
 
 **Definition 4:** Given a time series $T$ of fixed length $m$ (a subset of a time series data stream) and $x_t$ as a series sample at time $t$ , a matrix $WM$ of all possible subsequences of length $k$ can be built by moving a sliding window of size $k$ across $T$ and placing subsequence $X_p = \{x_p ,x_{p +1}, … , x_{p +k} \}$ (Figure 2) in the $p^{th}$ row of $WM$ . The size of the resulting matrix $WM$ is $(m − k + 1) × n $
 
@@ -59,7 +58,7 @@ where $x_i$ is a d-dimensional data vector arriving at time stamp i [17]
 
 **Definition 5:** In a time series, using sliding window $X_t$ as a sample instead of $x_t$ , an ***interval $χ_t$*** with Hankel matrix $\{X_t , X_{t +1}, … , X_{t +n –1}\}$ as shown in Figure 2 will be a set of $n$ retrospective subsequence samples starting at time t [2] [21] [22]
 
-**Definition 6: ** A ***change point*** represents a transition between different states in a process that
+**Definition 6:** A ***change point*** represents a transition between different states in a process that
 
 generates the time series data.
 
@@ -199,7 +198,7 @@ $$
 x_t = wx^{t-1}_{t-k} + \varepsilon
 $$
 
-Where $ x^{t-1}_{t-k} = (x_{t-1}, x_{t-2},...,x_{t-k}) $ are previous observation,  $\omega = (\omega_1, \dots, \omega_k) \in \mathbb{R}^k$ 是常数，$\epsilon$ 是按照高斯分布生成的类似白噪声的正态随机变量。通过更新模型参数，可以在时间 $t$ 计算概率密度函数(probability density function)，并得到一系列概率密度 $\{p_t : t = 1, 2, \dots\}$。接下来，通过给每个数据点评分生成一个辅助时间序列(auniliary time-series) $y_t$。这个评分函数定义为对数似然的平均值(average of the log-likelihood)，$Score(y_t) = -\log p_{t-1}(y_t)$，或统计偏差(statistical deviation)，即 $Score(y_t) = d(p_{t-1}, p_t)$，其中 $d(*, *)$是由各种距离函数提供的，包括变差距离(variation distance)、Hellinger 距离(Hellinger distance)或二次距离(quadratic distance)。新的时间序列数据表示每对连续时间序列区间之间的差异。为了检测变点，需要知道两对连续差异之间是否存在突变。为此，再拟合一个自回归模型(AR Model)到基于差异的时间序列，并构建一个新的概率密度函数序列 $\{q_t : t = 1, 2, \dots \}$。变点评分使用前述的评分函数定义。较高的评分表示变点的可能性较高。
+Where ${x^{t-1}_{t-k} = (x_{t-1}, x_{t-2},...,x_{t-k})}$ are previous observation, $\omega = (\omega_1, \dots, \omega_k) \in \mathbb{R}^k$ 是常数，$\epsilon$ 是按照高斯分布生成的类似白噪声的正态随机变量。通过更新模型参数，可以在时间 $t$ 计算概率密度函数(probability density function)，并得到一系列概率密度 $\{p_t : t = 1, 2, \dots\}$ 。接下来，通过给每个数据点评分生成一个辅助时间序列(auniliary time-series)  $y_t$。这个评分函数定义为对数似然的平均值(average of the log-likelihood), $Score(y_t) = -\log p_{t-1}(y_t)$，或统计偏差(statistical deviation)，即 $Score(y_t) = d(p_{t-1}, p_t)$，其中 $d(*, *)$ 是由各种距离函数提供的，包括变差距离(variation distance)、Hellinger 距离(Hellinger distance)或二次距离(quadratic distance)。新的时间序列数据表示每对连续时间序列区间之间的差异。为了检测变点，需要知道两对连续差异之间是否存在突变。为此，再拟合一个自回归模型(AR Model)到基于差异的时间序列，并构建一个新的概率密度函数序列 $\{q_t : t = 1, 2, \dots \}$。变点评分使用前述的评分函数定义。较高的评分表示变点的可能性较高。
 
 由于这些方法依赖于预先设计的参数模型，因此在实际的变点检测场景中灵活性较差，一些最近的研究引入了更灵活的非参数变体，通过直接估计概率密度比率来避免进行密度估计。这种密度比率估计 (density-ratio estimation)的基本原理是，了解两个密度意味着了解密度比率，但反之则不然：知道比率并不一定意味着知道两个密度，因为这种分解不是唯一的。因此，直接密度比率估计比密度估计要简单得多。基于这一思想，已经开发了直接密度比率估计的方法[2] [22]。这些方法通过非参数高斯核模型 (non-parametric Gaussian kernel model) 来建模两个连续区间 $\chi$  和 $\chi'$之间的密度比率，如下所示：
 
@@ -272,7 +271,7 @@ $$
 
 ![image-20240621182214940](../../images/monitor/image-20240621182214940.png)
 
-其中，$x^{(r)}_t$表示与运行长度 $r_t$ 相关联的观测集合，$P(r_t | r_{t-1})$、$P(x_t|r_{t-1},x^{(r)}_t)$和 $ P(r_{t-1}, x_{1:t-1}) $ 分别是该方程的先验(prior)、似然 (likelihood) 和递归 (recursive) 组件。条件先验在仅两个结果（$r_t = 0$ 或 $r_t = r_{t-1} + 1$）时为非零，从而简化了方程。
+其中，$x^{(r)}_t$ 表示与运行长度  $r_t$ 相关联的观测集合，$P(r_t | r_{t-1})$、$P(x_t|r_{t-1},x^{(r)}_t)$和 $ P(r_{t-1}, x_{1:t-1}) $ 分别是该方程的先验(prior)、似然 (likelihood) 和递归 (recursive) 组件。条件先验在仅两个结果（$r_t = 0$ 或 $r_t = r_{t-1} + 1$）时为非零，从而简化了方程。
 
 ![image-20240621183007944](../../images/monitor/image-20240621183007944.png)
 
@@ -295,7 +294,7 @@ $$
 
 #### **3.2.4 Kernel Based Methods**
 
-虽然 kernel-based methods 通常作为监督学习技术使用，但一些研究使用无监督的 kernel-based 的检验统计量来检验时间序列过去和现在滑动窗口中的数据同质性(homogeneity)。这些方法将观测值映射到与再生核 $k(.,.)$ 和特征映射 $\Phi(X) = k(X, .)$ 相关的再生核希尔伯特空间（Reproducing Kernel Hilbert Space，RKHS）$$\mathcal{H}$$ 中 [58]。然后，他们使用基于kernel Fisher 判别比率的检验统计量作为窗口之间同质性的度量。 (这句的原文：They then use a test statistic based upon the kernel Fisher discriminant ratio as a measure of homogeneity between windows.)
+虽然 kernel-based methods 通常作为监督学习技术使用，但一些研究使用无监督的 kernel-based 的检验统计量来检验时间序列过去和现在滑动窗口中的数据同质性(homogeneity)。这些方法将观测值映射到与再生核 $k(.,.)$ 和特征映射 $\Phi(X) = k(X, .)$ 相关的再生核希尔伯特空间（Reproducing Kernel Hilbert Space，RKHS）$\mathcal{H}$  中 [58]。然后，他们使用基于kernel Fisher 判别比率的检验统计量作为窗口之间同质性的度量。 (这句的原文：They then use a test statistic based upon the kernel Fisher discriminant ratio as a measure of homogeneity between windows.)
 
 考虑两个观测窗口，样本 $X$ 的经验均值元素(empirical mean elements) 和协方差算子(covariance operators)（样本长度为 $n$）的计算公式如下：
 
@@ -433,19 +432,19 @@ $$
 
 大多数研究没有提供任何比较，或者在某些情况下甚至没有提供性能测量。例如，对于 SPLL 和clustering methods，没有可用的结果。同样，基于图的 CPD 实验结果仅适用于不同的图结构，以证明准确性高度依赖于图的结构 [23]。包含性能分析的研究倾向于计算实际变点与检测到的变点之间的距离，并使用准确性、精度和召回率等离散指标来评估算法。表4总结了先前研究中使用以下数据集的报告性能：
 
-![截屏2024-06-24 18.22.04](../../images/monitor/截屏2024-06-24 18.22.04.png)
+![Table4](../../images/monitor/Table4.png)
 
 **Dataset 1: Speech recognition:** 这是由日本国立信息学研究所（NII）提供的 IPSJ SIG-SLP 噪声语音识别语料库和环境（CENSREC）数据集 [65]。该数据集记录了嘈杂环境中的人声。任务是从录制的信号中提取语音部分。
 
 **Dataset 2: ECG:** 这是在 UCR 时间序列数据挖掘存档中找到的呼吸数据集[66]。该数据集记录了患者在醒来时通过胸廓扩张测量的呼吸。该序列由医学专家手动分段。
 
-**Dataset 3: Speech recognition:**该数据集代表了 1980 年代流行的法国娱乐电视节目“Le Grand ‘Echiquier”的音轨。该数据集包含大约三个小时的音轨数据。
+**Dataset 3: Speech recognition:** 该数据集代表了 1980 年代流行的法国娱乐电视节目“Le Grand ‘Echiquier”的音轨。该数据集包含大约三个小时的音轨数据。
 
-**Dataset 4: Brain-Computer Interface Data:**这些脑-机接口（BCI）试验实验期间获得的信号自然显示出时间结构。相应的数据集构成了 BCI 竞赛 III 的基础。数据是在三个正常受试者的四个无反馈会话期间获得的，每个受试者被要求执行不同的任务，任务切换的时间是随机的。
+**Dataset 4: Brain-Computer Interface Data:** 这些脑-机接口（BCI）试验实验期间获得的信号自然显示出时间结构。相应的数据集构成了 BCI 竞赛 III 的基础。数据是在三个正常受试者的四个无反馈会话期间获得的，每个受试者被要求执行不同的任务，任务切换的时间是随机的。
 
 **Dataset 5: Iowa Crop Biomass NDVI Data:** NDVI 时间序列数据在 2001 年至 2006 年期间作为数据产品提供。在该数据集中，每隔十六天进行一次观测。
 
-**Dataset 6: Smart Home Data:**该数据代表在 WSU 校园内的一间智能公寓中收集的传感器读数 [67]。公寓配备了红外运动/环境光传感器、门/环境温度传感器、灯开关传感器和电源使用传感器。数据标记了相应的人类活动，并且活动之间自然发生变化。
+**Dataset 6: Smart Home Data:** 该数据代表在 WSU 校园内的一间智能公寓中收集的传感器读数 [67]。公寓配备了红外运动/环境光传感器、门/环境温度传感器、灯开关传感器和电源使用传感器。数据标记了相应的人类活动，并且活动之间自然发生变化。
 
 **Dataset 7: Human activity dataset:** 这是 2011 年人体活动传感联盟（Human Activity Sensing Consortium）挑战赛的一部分 [68]。该数据集提供了通过便携式三轴加速度计收集的人体活动信息。变点检测的任务是根据六种行为对时间序列数据进行分段：“停留”、“步行”、“慢跑”、“跳跃”、“上楼”和“下楼”。
 
