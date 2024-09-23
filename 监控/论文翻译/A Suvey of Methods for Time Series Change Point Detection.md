@@ -45,7 +45,7 @@ $$
 
 where $x_i$ is a d-dimensional data vector arriving at time stamp i [17]
 
-**Definition 2:** A ***stationary time series*** is a finite variance process whose statistical properties are all constant over time. This definition assumes that
+**Definition 2:** A ***stationary time series (平稳时间序列)*** is a finite variance process whose statistical properties are all constant over time. This definition assumes that
 
 - The mean value function $μ_t = E (x_t ) $​ is constant and does not depend on time t .
 - The **auto covariance function** $γ(s , t ) = cov (x_s , x_t ) = E [(x_s − μ_s )(x_t − μ_t )]$ depends on time stamps s and t only through their time difference, or |s – t| .
@@ -85,7 +85,7 @@ generates the time series data.
 
 **参数化方法** (parametric approach)指定要由模型学习的特定函数形式，然后根据有标签的训练数据估计未知参数。一旦模型训练完成，训练示例可以被丢弃。相比之下，**非参数化方法** (nonparametric method)不对底层函数的形式做任何假设。相应的代价是，在进行推理时必须保留所有可用数据[27]。
 
-成功的算法必须在决策质量和计算成本之间进行权衡。一种有前途的方法是使用任意时间（anytime）算法[28]，这种算法允许在任何时候中断执行并输出迄今为止获得的最佳解决方案。类似的方法是合同（contract）算法，这种算法也在计算时间和解决方案质量之间进行权衡，但在开始执行前预先指定允许的运行时间，作为一种合同约定。与任意时间算法不同，合同算法在执行前接收指定的允许执行时间参数。如果合同算法在分配时间完成之前被中断，可能不会产生任何有用的结果。可中断算法（例如任意时间算法）是一种执行时间不预先给定的算法，因此必须准备在任何时刻被中断，但它利用可用的时间不断提高其解决方案的质量。通常，每个可中断算法都是一个简单的合同算法，但反之则不成立[29。
+成功的算法必须在决策质量和计算成本之间进行权衡。一种有前途的方法是使用任意时间（anytime）算法[28]，这种算法允许在任何时候中断执行并输出迄今为止获得的最佳解决方案。类似的方法是合同（contract）算法，这种算法也在计算时间和解决方案质量之间进行权衡，但在开始执行前预先指定允许的运行时间，作为一种合同约定。与任意时间算法不同，合同算法在执行前接收指定的允许执行时间参数。如果合同算法在分配时间完成之前被中断，可能不会产生任何有用的结果。可中断算法（例如任意时间算法）是一种执行时间不预先给定的算法，因此必须准备在任何时刻被中断，但它利用可用的时间不断提高其解决方案的质量。通常，每个可中断算法都是一个简单的合同算法，但反之则不成立[29]。
 
 #### 2.2.3 Algorithm constraints
 

@@ -220,6 +220,7 @@
 - [神们自己](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%A5%9E%E4%BB%AC%E8%87%AA%E5%B7%B1.md)
 - [置身事内：中国政府与经济发展](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%BD%AE%E8%BA%AB%E4%BA%8B%E5%86%85%EF%BC%9A%E4%B8%AD%E5%9B%BD%E6%94%BF%E5%BA%9C%E4%B8%8E%E7%BB%8F%E6%B5%8E%E5%8F%91%E5%B1%95.md)
 - [芯片战争](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%8A%AF%E7%89%87%E6%88%98%E4%BA%89.md)
+- [苏东坡新传](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%8B%8F%E4%B8%9C%E5%9D%A1%E6%96%B0%E4%BC%A0.md)
 - [蛤蟆先生去看心理医生](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%9B%A4%E8%9F%86%E5%85%88%E7%94%9F%E5%8E%BB%E7%9C%8B%E5%BF%83%E7%90%86%E5%8C%BB%E7%94%9F.md)
 - [西线无战事](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%A5%BF%E7%BA%BF%E6%97%A0%E6%88%98%E4%BA%8B.md)
 - [解忧杂货店](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E8%A7%A3%E5%BF%A7%E6%9D%82%E8%B4%A7%E5%BA%97.md)
@@ -265,6 +266,7 @@
 - [02 PromQL](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/Prometheus/prometheus-book/02%20PromQL.md)
 ### **[<font color=#008000>论文翻译</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91)**
 - [A Suvey of Methods for Time Series Change Point Detection](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91/A%20Suvey%20of%20Methods%20for%20Time%20Series%20Change%20Point%20Detection.md)
+- [Bayesian Online Changepoint Detection](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91/Bayesian%20Online%20Changepoint%20Detection.md)
 ## **[<font color=#008000>算法</font>](https://github.com/Uyouii/Reading/blob/master/%E7%AE%97%E6%B3%95)**
 - [算法](https://github.com/Uyouii/Reading/blob/master/%E7%AE%97%E6%B3%95/%E7%AE%97%E6%B3%95.md)
 ## **[<font color=#008000>设计</font>](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1)**
