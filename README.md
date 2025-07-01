@@ -175,6 +175,7 @@
 ## **[<font color=#008000>文学</font>](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6)**
 - [一个叫欧维的男人决定去死](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%B8%80%E4%B8%AA%E5%8F%AB%E6%AC%A7%E7%BB%B4%E7%9A%84%E7%94%B7%E4%BA%BA%E5%86%B3%E5%AE%9A%E5%8E%BB%E6%AD%BB.md)
 - [三体](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%B8%89%E4%BD%93.md)
+- [亮剑](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%AE%E5%89%91.md)
 - [亲密关系](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%B2%E5%AF%86%E5%85%B3%E7%B3%BB.md)
 - [人体简史](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%BA%E4%BD%93%E7%AE%80%E5%8F%B2.md)
 - [人性的枷锁](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%BA%E6%80%A7%E7%9A%84%E6%9E%B7%E9%94%81.md)
@@ -215,6 +216,7 @@
 - [流浪地球](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%B5%81%E6%B5%AA%E5%9C%B0%E7%90%83.md)
 - [潜规则](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E6%BD%9C%E8%A7%84%E5%88%99.md)
 - [焦虑的人](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%84%A6%E8%99%91%E7%9A%84%E4%BA%BA.md)
+- [生死疲劳](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%94%9F%E6%AD%BB%E7%96%B2%E5%8A%B3.md)
 - [百年孤独](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%99%BE%E5%B9%B4%E5%AD%A4%E7%8B%AC.md)
 - [硅谷钢铁侠：埃隆·马斯克的冒险人生](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%A1%85%E8%B0%B7%E9%92%A2%E9%93%81%E4%BE%A0%EF%BC%9A%E5%9F%83%E9%9A%86%C2%B7%E9%A9%AC%E6%96%AF%E5%85%8B%E7%9A%84%E5%86%92%E9%99%A9%E4%BA%BA%E7%94%9F.md)
 - [社会性动物](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E7%A4%BE%E4%BC%9A%E6%80%A7%E5%8A%A8%E7%89%A9.md)
