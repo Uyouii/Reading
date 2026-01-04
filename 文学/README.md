@@ -6,6 +6,7 @@
 - [亲密关系](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%B2%E5%AF%86%E5%85%B3%E7%B3%BB.md)
 - [人体简史](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%BA%E4%BD%93%E7%AE%80%E5%8F%B2.md)
 - [人性的枷锁](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%BA%E6%80%A7%E7%9A%84%E6%9E%B7%E9%94%81.md)
+- [人月神话](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%BA%E6%9C%88%E7%A5%9E%E8%AF%9D.md)
 - [人类简史](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%BA%E7%B1%BB%E7%AE%80%E5%8F%B2.md)
 - [人类群星闪耀时](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%BA%E7%B1%BB%E7%BE%A4%E6%98%9F%E9%97%AA%E8%80%80%E6%97%B6.md)
 - [人间失格](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E4%BA%BA%E9%97%B4%E5%A4%B1%E6%A0%BC.md)
