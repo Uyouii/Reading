@@ -115,6 +115,8 @@
 ### **[<font color=#008000>ZooKeeper</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper)**
 - [ZooKeeper: Wait-free coordination for Internet-scale systems](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/ZooKeeper%3A%20Wait-free%20coordination%20for%20Internet-scale%20systems.md)
 - [Zookeeper.zh](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/Zookeeper.zh.md)
+### **[<font color=#008000>数据密集型应用系统</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F)**
+- [Designing Data-Intensive Applications](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F/Designing%20Data-Intensive%20Applications.md)
 ## **[<font color=#008000>图形学</font>](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6)**
 ### **[<font color=#008000>Fundamental of Gomputer Graphics</font>](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Fundamental%20of%20Gomputer%20Graphics)**
 - [01 Introduction](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Fundamental%20of%20Gomputer%20Graphics/01%20Introduction.md)
