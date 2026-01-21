@@ -1210,14 +1210,111 @@ So what is the relationship between the causal order and linearizability? The an
 
 那么，因果顺序与线性一致性之间存在怎样的关系？答案是**线性一致性蕴含因果一致性**：任何具备线性一致性的系统，都能正确地保持因果关系 [7]。具体来说，若系统中存在多条通信渠道（例如图 9-5 中的消息队列与文件存储服务），线性一致性可以确保因果关系被自动维持，无需系统采取任何特殊手段（比如在不同组件之间传递时间戳）。
 
-The fact that linearizability ensures causality is what makes linearizable systems sim‐ple to understand and appealing. However, as discussed in “The Cost of Linearizabil‐ity” on page 335, making a system linearizable can harm its performance andavailability, especially if the system has significant network delays (for example, if it’sgeographically distributed). For this reason, some distributed data systems haveabandoned linearizability, which allows them to achieve better performance but canmake them difficult to work with.
+The fact that linearizability ensures causality is what makes linearizable systems simple to understand and appealing. However, as discussed in “The Cost of Linearizability” on page 335, making a system linearizable can harm its performance andavailability, especially if the system has significant network delays (for example, if it’s geographically distributed). For this reason, some distributed data systems have abandoned linearizability, which allows them to achieve better performance but can make them difficult to work with.
 
 线性一致性能够保障因果关系这一特性，让线性一致性系统易于理解且颇具吸引力。但正如第 335 页《线性一致性的成本》一节所讨论的，实现系统的线性一致性可能会损害其性能与可用性，在系统存在显著网络延迟的场景下（例如地理分布式系统），这种负面影响尤为突出。正因如此，部分分布式数据系统舍弃了线性一致性 —— 这一做法能换取更优的性能表现，但也会提升系统的使用难度。
 
-The good news is that a middle ground is possible. Linearizability is not the only wayof preserving causality—there are other ways too. A system can be causally consistentwithout incurring the performance hit of making it linearizable (in particular, theCAP theorem does not apply). **In fact, causal consistency is the strongest possibleconsistency model that does not slow down due to network delays, and remainsavailable in the face of network failures** [2, 42].
+The good news is that a middle ground is possible. Linearizability is not the only wayof preserving causality—there are other ways too. A system can be causally consistentwithout incurring the performance hit of making it linearizable (in particular, theCAP theorem does not apply). **In fact, causal consistency is the strongest possibleconsistency model that does not slow down due to network delays, and remains available in the face of network failures** [2, 42].
 
 好消息是，我们可以找到一种**折中方案**。线性一致性并非保持因果关系的唯一方式，还存在其他替代方案。系统可以在不承担线性一致性带来的性能损耗的前提下，实现因果一致性（值得一提的是，这种情况下 CAP 定理不再适用）。实际上，因果一致性是这样一种一致性模型：它是**不会因网络延迟而降低速度、且在网络故障发生时仍能保持可用的最强一致性模型**[2,42]。
 
-In many cases, systems that appear to require linearizability in fact only really requirecausal consistency, which can be implemented more efficiently. Based on this obser‐vation, researchers are exploring new kinds of databases that preserve causality, withperformance and availability characteristics that are similar to those of eventuallyconsistent systems [49, 50, 51].
+In many cases, systems that appear to require linearizability in fact only really require causal consistency, which can be implemented more efficiently. Based on this observation, researchers are exploring new kinds of databases that preserve causality, with performance and availability characteristics that are similar to those of eventually consistent systems [49, 50, 51].
 
 在许多场景下，**看似需要线性一致性的系统**，实际上往往只需要因果一致性即可 —— 而因果一致性的实现效率更高。基于这一发现，研究人员正在探索**具备因果一致性保障能力的新型数据库**，这类数据库的性能与可用性表现，与最终一致性系统相近 [49,50,51]。
+
+
+
+#### Sequence Number Ordering
+
+**序列编号排序**
+
+Although causality is an important theoretical concept, actually keeping track of allcausal dependencies can become impractical. In many applications, clients read lotsof data before writing something, and then it is not clear whether the write is causallydependent on all or only some of those prior reads. Explicitly tracking all the datathat has been read would mean a large overhead.
+
+因果关系虽是一个重要的理论概念，但实际追踪所有因果依赖关系，往往不具备可行性。在诸多应用场景中，客户端会先读取大量数据，再执行写入操作，而此时我们很难界定，后续的写入操作是与此前所有的读取操作存在因果依赖，还是仅与其中部分读取操作有关。若要显式追踪所有已读取的数据，会产生极大的性能开销。
+
+However, there is a better way: we can use sequence numbersor timestamps to orderevents. A timestamp need not come from a time-of-day clock (or physical clock,which have many problems, as discussed in “Unreliable Clocks” on page 287). It caninstead come from a logical clock, which is an algorithm to generate a sequence ofnumbers to identify operations, typically using counters that are incremented forevery operation.
+
+不过，我们可以采用一种更优的方案：借助**序列编号**或**时间戳**来为事件排序。时间戳的来源不一定是日历时钟（即物理时钟，其存在诸多弊端，详见第 287 页的《不可靠时钟》），也可以来源于**逻辑时钟**。逻辑时钟是一种生成数字序列以标识操作的算法，通常会为每一次操作递增计数器，以此生成对应的编号。
+
+Such sequence numbers or timestamps are compact (only a few bytes in size), andthey provide a **total order**: that is, every operation has a unique sequence number, andyou can always compare two sequence numbers to determine which is greater (i.e.,which operation happened later).
+
+这类序列编号或时间戳具备**简洁性**（仅占用数个字节的存储空间），并且能够定义一种**全序关系**：也就是说，每一项操作都对应一个唯一的序列编号，通过对比任意两个序列编号的大小，我们就能判断出对应操作的先后顺序（编号更小的操作发生时间更早）。
+
+In particular, we can create sequence numbers in a total order that is consistent withcausality:vii we promise that if operation A causally happened before B, then A occurs before B in the total order (A has a lower sequence number than B). Concurrentoperations may be ordered arbitrarily. Such a total order captures all the causalityinformation, but also imposes more ordering than strictly required by causality.
+
+值得一提的是，我们可以生成一种与因果关系一致的全序序列编号：⁷ 我们保证，若操作 A 在因果关系上发生于操作 B 之前，那么在全序关系中，操作 A 也会排在操作 B 之前（即操作 A 的序列编号小于操作 B）。对于并发操作，则可按照任意顺序排列。这种全序关系既涵盖了所有因果信息，又施加了比因果关系严格得多的排序约束。
+
+In a database with single-leader replication (see “Leaders and Followers” on page152), the replication log defines a total order of write operations that is consistentwith causality. The leader can simply increment a counter for each operation, andthus assign a monotonically increasing sequence number to each operation in thereplication log. If a follower applies the writes in the order they appear in the replica‐tion log, the state of the follower is always causally consistent (even if it is lagging behind the leader).
+
+在采用**单主复制**的数据库中（详见第 152 页的《主节点与从节点》），复制日志定义了一套与因果关系一致的写入操作全序。主节点只需为每一次操作递增计数器，就能为复制日志中的每一项操作分配一个**单调递增**的序列编号。若从节点严格按照复制日志中的顺序执行写入操作，那么无论其同步进度是否落后于主节点，自身的数据状态都能始终保持**因果一致性**。
+
+
+
+A Lamport timestamp bears no relationship to a physical time-of-day clock, but it provides **total ordering**: if you have two timestamps, the one with a greater countervalue is the greater timestamp; if the counter values are the same, the one with thegreater node ID is the greater timestamp.
+
+**兰波特时间戳**与物理日历时钟毫无关联，但它能够实现**全序关系排序**：若存在两个时间戳，计数器数值更大的那个时间戳更大；若两个时间戳的计数器数值相同，则节点 ID 更大的那个时间戳更大。
+
+So far this description is essentially the same as the even/odd counters described inthe last section. The key idea about Lamport timestamps, which makes them consis‐tent with causality, is the following: every node and every client keeps track of themaximum counter value it has seen so far, and includes that maximum on everyrequest. When a node receives a request or response with a maximum counter valuegreater than its own counter value, it immediately increases its own counter to thatmaximum.
+
+截至目前，上述描述本质上与上一节提到的**奇偶计数器**机制完全一致。兰波特时间戳之所以能与因果关系保持一致，其核心设计思路如下：**每个节点与每个客户端都会记录自身迄今为止见过的最大计数器值，并在每次请求中附带该最大值**。当某个节点接收到的请求或响应中，携带的最大计数器值大于自身当前的计数器值时，该节点会立即将自身的计数器更新为这个最大值。
+
+This is shown in Figure 9-8, where client A receives a counter value of 5 from node 2,and then sends that maximum of 5 to node 1. At that time, node 1’s counter was only1, but it was immediately moved forward to 5, so the next operation had an incre‐mented counter value of 6.
+
+这一过程如图 9-8 所示：客户端 A 从节点 2 获取到计数器值 5，随后便将这个最大值 5 携带至发往节点 1 的请求中。此时，节点 1 自身的计数器值仅为 1，但它会立即将计数器更新为 5，因此其执行的下一次操作，对应的计数器值就会递增为 6。
+
+![DDIA 9-8](../../images/distribuide_system/DDIA-9-8.jpg)
+
+As long as the maximum counter value is carried along with every operation, thisscheme ensures that the ordering from the Lamport timestamps is consistent withcausality, because every causal dependency results in an increased timestamp.
+
+只要每次操作都携带当前的最大计数器值，这套机制就能确保兰波特时间戳所定义的排序与因果关系一致 —— 因为每一个因果依赖关系，都会对应一个递增的时间戳。
+
+#### Total Order Broadcast
+
+**全序广播**
+
+Total order broadcast is usually described as a protocol for exchanging messagesbetween nodes. Informally, it requires that two safety properties always be satisfied:
+
+- **Reliable delivery** No messages are lost: if a message is delivered to one node, it is delivered to all nodes.
+- **Totally ordered delivery** Messages are delivered to every node in the same order.
+
+全序广播通常被定义为一种节点间的消息交换协议。通俗来讲，该协议要求始终满足以下两项**安全属性**：
+
+- **可靠投递**：无消息丢失。若一条消息被投递至某一节点，就必须被投递至所有节点。
+- **全序投递**：所有节点接收消息的顺序完全一致。
+
+A correct algorithm for total order broadcast must ensure that the reliability and ordering properties are always satisfied, even if a node or the network is faulty. Of course, messages will not be delivered while the network is interrupted, but an algorithm can keep retrying so that the messages get through when the network is eventually repaired (and then they must still be delivered in the correct order).
+
+一个正确的全序广播算法，必须确保上述可靠性与有序性属性始终成立，即便是在节点或网络发生故障的情况下。当然，网络中断期间消息无法完成投递，但算法可以持续重试，确保网络恢复后消息能够成功送达（且送达时仍需遵循既定的正确顺序）。
+
+**Using total order broadcast**
+
+**全序广播的应用场景**
+
+Consensus services such as ZooKeeper and etcd actually implement total orderbroadcast. This fact is a hint that there is a strong connection between total orderbroadcast and consensus, which we will explore later in this chapter.
+
+ZooKeeper、etcd 这类**共识服务**的底层，实际上都实现了全序广播机制。这一特性也暗示了全序广播与共识之间存在紧密的关联，我们将在本章后续内容中深入探讨这一点。
+
+Total order broadcast is exactly what you need for database replication: if every mes‐sage represents a write to the database, and every replica processes the same writes inthe same order, then the replicas will remain consistent with each other (aside fromany temporary replication lag). This principle is known as **state machine replication**[60], and we will return to it in Chapter 11.
+
+全序广播的特性，恰好满足数据库复制的核心需求：如果每条消息对应一次数据库写入操作，且所有副本都按照相同顺序处理这些写入请求，那么各副本之间的数据状态就能保持一致（暂不考虑暂时性的复制延迟）。这一实现原理被称为**状态机复制**[60]，我们会在第 11 章中进一步展开讨论。
+
+Similarly, total order broadcast can be used to implement **serializable transactions**: asdiscussed in “Actual Serial Execution” on page 252, if every message represents adeterministic transaction to be executed as a stored procedure, and if every node pro‐cesses those messages in the same order, then the partitions and replicas of the data‐base are kept consistent with each other [61].
+
+同理，全序广播也可用于实现**可串行化事务**：正如第 252 页《实际串行执行》一节所述，若每条消息对应一个可作为存储过程执行的确定性事务，且所有节点都按同一顺序处理这些消息，那么数据库的各个分区与副本就能维持数据一致性 [61]。
+
+An important aspect of total order broadcast is that the order is fixed at the time themessages are delivered: a node is not allowed to retroactively insert a message into anearlier position in the order if subsequent messages have already been delivered. Thisfact makes total order broadcast stronger than timestamp ordering.
+
+全序广播的一个关键特性在于，消息的投递顺序在送达时即被固定：如果后续消息已经完成投递，节点就不能再将新消息回溯插入到顺序中的靠前位置。这一特性使得全序广播的排序能力，要强于基于时间戳的排序方式。
+
+Another way of looking at total order broadcast is that it is a way of creating a **log** (asin a replication log, transaction log, or write-ahead log): delivering a message is likeappending to the log. Since all nodes must deliver the same messages in the sameorder, all nodes can read the log and see the same sequence of messages.
+
+从另一个角度理解，全序广播相当于构建了一份**日志**（类似复制日志、事务日志或预写式日志）：投递消息的过程，就等同于向日志中追加内容。由于所有节点接收消息的顺序完全一致，因此它们读取这份日志时，看到的消息序列也完全相同。
+
+Total order broadcast is also useful for implementing a lock service that provides **fencing tokens** (see “Fencing tokens” on page 303). Every request to acquire the lockis appended as a message to the log, and all messages are sequentially numbered inthe order they appear in the log. The sequence number can then serve as a fencingtoken, because it is monotonically increasing. In ZooKeeper, this sequence number is called **zxid** [15].
+
+全序广播还可用于实现支持**围栏令牌**的锁服务（详见第 303 页《围栏令牌》）。所有获取锁的请求都会作为消息追加到日志中，日志中的消息会按照顺序被分配一个连续的序列号。这个序列号即可作为围栏令牌，因为它具备单调递增的特性。在 ZooKeeper 中，该序列号被称为 **zxid**[15]。
+
+
+
+
+
