@@ -930,3 +930,294 @@ Weak isolation levels protect against some of those anomalies but leave you, the
 
 
 
+## Chapter 8. The Trouble With Distributed Systems
+
+### Faults and Partial Failures
+
+**故障与部分失效**
+
+There is no fundamental reason why software on a single computer should be flaky:when the hardware is working correctly, the same operation always produces thesame result (it is deterministic). If there is a hardware problem (e.g., memory corrup‐tion or a loose connector), the consequence is usually a total system failure (e.g., ker‐nel panic, “blue screen of death,” failure to start up). An individual computer withgood software is usually either fully functional or entirely broken, but not somethingin between.
+
+单台计算机上的软件本不该存在稳定性问题：在硬件正常运行的情况下，相同操作理应产生相同结果（即具备**确定性**）。若硬件出现故障（例如内存损坏或接口松动），后果通常是**系统完全瘫痪**（如内核崩溃、蓝屏死机、无法启动）。一台搭载优质软件的独立计算机，其状态通常只有**完全可用**和**彻底故障**两种，而非介于两者之间的中间状态。
+
+This is a deliberate choice in the design of computers: if an internal fault occurs, weprefer a computer to crash completely rather than returning a wrong result, becausewrong results are difficult and confusing to deal with. Thus, computers hide the fuzzyphysical reality on which they are implemented and present an idealized systemmodel that operates with mathematical perfection. A CPU instruction always doesthe same thing; if you write some data to memory or disk, that data remains intactand doesn’t get randomly corrupted. This design goal of always-correct computationgoes all the way back to the very first digital computer [3].
+
+这是计算机设计过程中一个**刻意为之的选择**：当内部故障发生时，我们更倾向于让计算机彻底崩溃，而非返回错误结果 —— 因为错误结果的处理难度大，且极易造成混乱。基于此，计算机屏蔽了底层硬件模糊的物理特性，对外呈现出一个理想化的系统模型，该模型能够以数学层面的完美状态运行。一条 CPU 指令的执行结果永远保持一致；向内存或磁盘写入的数据会完整留存，不会发生随机损坏。这种 **“始终正确计算”** 的设计目标，最早可以追溯到第一台数字计算机诞生的时代 [3]。
+
+If we want to make distributed systems work, we must accept the possibility of partial failure and build fault-tolerance mechanisms into the software. In other words, we need to **build a reliable system from unreliable components**. (As discussed in “Relia‐bility” on page 6, there is no such thing as perfect reliability, so we’ll need to understand the limits of what we can realistically promise.) Even in smaller systems consisting of only a few nodes, it’s important to think aboutpartial failure. In a small system, it’s quite likely that most of the components areworking correctly most of the time. However, sooner or later, some part of the system  will become faulty, and the software will have to somehow handle it. The fault han‐dling must be part of the software design, and you (as operator of the software) needto know what behavior to expect from the software in the case of a fault.
+
+若要让分布式系统稳定运行，我们就必须接受**部分失效**的可能性，并在软件中内置**容错机制**。换句话说，我们需要**用不可靠的组件构建可靠的系统**。（正如第 6 页 “可靠性” 一节所讨论的，绝对可靠的系统并不存在，因此我们需要清楚自己实际能承诺的可靠性边界。）即便是由少数节点构成的小型系统，考量部分失效问题也同样重要。在小型系统中，大多数组件多数时候都能正常工作，这种情况是很常见的。但无论如何，系统的某个部分迟早会出现故障，软件必须以某种方式对此进行处理。故障处理逻辑必须作为软件设计的一部分，而你（作为软件运维人员）需要清楚，当故障发生时，软件会呈现出怎样的行为。
+
+**Building a Reliable System from Unreliable Components**
+
+You may wonder whether this makes any sense—intuitively it may seem like a systemcan only be as reliable as its least reliable component (its weakest link). This is not thecase: in fact, it is an old idea in computing to construct a more reliable system from aless reliable underlying base [11]. For example:
+
+- **Error-correcting codes** allow digital data to be transmitted accurately across a communication channel that occasionally gets some bits wrong, for example due to radio interference on a wireless network [12].
+- IP (the Internet Protocol) is unreliable: it may drop, delay, duplicate, or reorder packets. TCP (the Transmission Control Protocol) provides a more reliable transport layer on top of IP: it ensures that missing packets are retransmitted,duplicates are eliminated, and packets are reassembled into the order in which they were sent.
+
+你可能会疑惑，这种思路是否成立 —— 直观来看，系统的可靠性似乎至多等同于其**最不可靠组件**的可靠性（也就是 “木桶效应”）。但事实并非如此：实际上，通过可靠性较低的底层基础构建更可靠的系统，是计算机领域的一个古老理念 [11]。例如：
+
+- **纠错码**技术能够让数字数据在存在偶发比特错误的通信信道上准确传输，比如无线网络中受无线电干扰影响的信道 [12]。
+- 互联网协议（IP）本身是不可靠的：它可能会丢弃、延迟、重复或乱序发送数据包。而传输控制协议（TCP）在 IP 的基础上，提供了更可靠的传输层服务：它会确保丢失的数据包被重传、重复的数据包被剔除，并且数据包会按照发送顺序重新组装。
+
+Although the system can be more reliable than its underlying parts, there is always alimit to how much more reliable it can be. For example, error-correcting codes candeal with a small number of single-bit errors, but if your signal is swamped by inter‐ference, there is a fundamental limit to how much data you can get through yourcommunication channel [13]. TCP can hide packet loss, duplication, and reorderingfrom you, but it cannot magically remove delays in the network.
+
+尽管上层系统的可靠性可以高于底层组件，但这种可靠性的提升存在**本质上限**。例如，纠错码可以处理少量的单比特错误，但如果信号被干扰完全淹没，通信信道能够传输的数据量就会存在无法突破的极限 [13]。TCP 可以为你屏蔽丢包、重复和乱序的问题，却无法凭空消除网络延迟。
+
+Although the more reliable higher-level system is not perfect, it’s still useful because ittakes care of some of the tricky low-level faults, and so the remaining faults are usu‐ally easier to reason about and deal with. We will explore this matter further in “Theend-to-end argument” on page 519.
+
+虽然经过可靠性增强的上层系统并非尽善尽美，但它依然具备很高的实用价值：因为它已经处理了部分棘手的底层故障，剩下的故障通常更容易被分析和应对。关于这一点，我们将在第 519 页的 **“端到端原则”** 一节中展开进一步探讨。
+
+### Knowledge, Truth, and Lies
+
+**认知、真相与误判**
+
+The moral of these stories is that a node cannot necessarily trust its own judgment ofa situation. A distributed system cannot exclusively rely on a single node, because anode may fail at any time, potentially leaving the system stuck and unable to recover.Instead, many distributed algorithms rely on a quorum, that is, voting among thenodes (see “Quorums for reading and writing” on page 179): decisions require someminimum number of votes from several nodes in order to reduce the dependence onany one particular node.
+
+这些案例揭示的核心启示是：节点未必能信任自身对当前状况的判断。分布式系统不能完全依赖单个节点 —— 因为任一节点都可能随时发生故障，这有可能导致整个系统陷入停滞且无法恢复。恰恰相反，许多分布式算法的设计都依赖于**法定人数**机制，即通过节点间的投票达成决策（参见第 179 页 “读写操作的法定人数机制”）：决策的生效需要获取若干节点的最低票数支持，以此降低系统对单一节点的依赖。
+
+That includes decisions about declaring nodes dead. If a quorum of nodes declaresanother node dead, then it must be considered dead, even if that node still very muchfeels alive. The individual node must abide by the quorum decision and step down.
+
+这一机制同样适用于**节点失效状态的判定决策**。只要超过法定人数的节点判定某一节点已失效，无论该节点自身是否仍处于正常运行状态，都必须被认定为失效节点。该节点自身也必须遵从法定人数的决策结果，退出系统运行。
+
+Most commonly, the quorum is an **absolute majority of more than half the nodes**(although other kinds of quorums are possible). A majority quorum allows the sys‐tem to continue working if individual nodes have failed (with three nodes, one failurecan be tolerated; with five nodes, two failures can be tolerated). However, it is stillsafe, because there can only be only one majority in the system—there cannot be twomajorities with conflicting decisions at the same time. We will discuss the use of quo‐rums in more detail when we get to **consensus** algorithmsin Chapter 9.
+
+在实践中，法定人数通常指**超过半数节点的绝对多数派**（当然也存在其他类型的法定人数机制）。多数派法定人数机制允许系统在部分节点失效的情况下继续运行：3 个节点的集群可容忍 1 个节点失效，5 个节点的集群则可容忍 2 个节点失效。同时，这种机制具备安全性 —— 系统中同一时间只会存在一个多数派，不会出现两个持有冲突决策的多数派并存的情况。关于法定人数机制的具体应用，我们将在第 9 章探讨**共识算法**时展开详细论述。
+
+
+
+ Let’s assume that every time the lock server grants a lock or lease, it also returns **afencing token**, which is a number that increases every time a lock is granted (e.g.,incremented by the lock service). We can then require that every time a client sends awrite request to the storage service, it must include its current fencing token.
+
+我们不妨做这样的设定：**锁服务器**每次授予锁或租约时，都会同时返回一个**防护令牌**。这个令牌是一个数字，每授予一次锁就会递增（例如由锁服务负责递增）。基于此，我们可以要求客户端**每次向存储服务发送写入请求时**，都必须附带其当前持有的防护令牌。
+
+In Figure 8-5, client 1 acquires the lease with a token of 33, but then it goes into along pause and the lease expires. Client 2 acquires the lease with a token of 34 (thenumber always increases) and then sends its write request to the storage service,including the token of 34. Later, client 1 comes back to life and sends its write to thestorage service, including its token value 33. However, the storage server remembersthat it has already processed a write with a higher token number (34), and so it rejectsthe request with token 33.
+
+在图 8-5 的场景中，客户端 1 获取了防护令牌为 33 的租约，但随后进入长时间停滞状态，租约也随之过期。客户端 2 紧接着获取了防护令牌为 34 的租约（令牌数值始终保持递增），并向存储服务发送写入请求，请求中附带了令牌 34。一段时间后，客户端 1 恢复正常运行，也向存储服务发送写入请求，附带的令牌数值为 33。但存储服务器会记录自己已经处理过令牌数值更高（34）的写入请求，因此会**拒绝携带令牌 33 的这次请求**。
+
+![Figure 8-5](../../images/distribuide_system/DDIA-8-5.jpg)
+
+> Figure 8-5. Making access to storage safe by allowing writes only in the order of increasing fencing tokens
+
+#### Byzantine Faults
+
+**拜占庭故障**
+
+**The Byzantine Generals Problem**
+
+**拜占庭将军问题**
+
+The Byzantine Generals Problem is a generalization of the so-called Two Generals Problem[78], which imagines a situation in which two army generals need to agreeon a battle plan. As they have set up camp on two different sites, they can only com‐municate by messenger, and the messengers sometimes get delayed or lost (like pack‐ets in a network). We will discuss this problem of consensusin Chapter 9.
+
+拜占庭将军问题是**两军问题**[78] 的泛化扩展，该问题构想了这样一种场景：两位军队将领需要就作战计划达成共识。由于他们分别扎营在两处不同的营地，只能通过信使传递消息，而信使可能会出现延误或失踪的情况（就像网络中的数据包丢失一样）。关于这个共识问题，我们将在第 9 章展开讨论。
+
+In the Byzantine version of the problem, there are n generals who need to agree, andtheir endeavor is hampered by the fact that there are some traitors in their midst.Most of the generals are loyal, and thus send truthful messages, but the traitors maytry to deceive and confuse the others by sending fake or untrue messages (while try‐ing to remain undiscovered). It is not known in advance who the traitors are.
+
+在拜占庭将军问题的设定中，共有n位将领需要达成共识，而他们的行动受制于一个情况 —— 队伍中存在叛徒。大多数将领是忠诚的，会传递真实的消息，但叛徒可能会发送伪造或虚假的消息，以此欺骗、混淆其他将领的判断，同时还会设法隐藏自己的身份。叛徒的身份在事前是未知的。
+
+A system is Byzantine fault-tolerant if it continues to operate correctly even if someof the nodes are malfunctioning and not obeying the protocol, or if malicious attack‐ers are interfering with the network. This concern is relevant in certain specific circumstances
+
+若一个系统**即便在部分节点发生故障、不遵守协议，或遭遇恶意攻击者的网络干扰时，仍能保持正确运行**，那么这个系统就具备**拜占庭容错能力**。这类问题仅在一些特定场景下才需要重点考量。
+
+#### System Model and Reality
+
+**系统模型与现实**
+
+**Correctness of an algorithm**
+
+To define what it means for an algorithm to be correct, we can describe its properties.For example, the output of a sorting algorithm has the property that for any two dis‐tinct elements of the output list, the element further to the left is smaller than the ele‐ment further to the right. That is simply a formal way of defining what it means for alist to be sorted.
+
+要定义一个算法的正确性，我们可以描述它应具备的**特性**。例如，排序算法的输出具有这样的特性：对于输出列表中的任意两个不同元素，左侧的元素始终小于右侧的元素。这是对 “列表已排序” 这一概念的一种形式化定义方式。
+
+Similarly, we can write down the properties we want of a distributed algorithm todefine what it means to be correct. For example, if we are generating fencing tokensfor a lock (see “Fencing tokens” on page 303), we may require the algorithm to havethe following properties:
+
+- **Uniqueness** No two requests for a fencing token return the same value.
+- **Monotonic sequence** If request xreturned token tx, and request yreturned token ty, and x completed before ybegan, then tx< ty.
+- **Availability** A node that requests a fencing token and does not crash eventually receives a response.
+
+同理，我们也可以通过列举期望的特性，来定义一个分布式算法的正确性。例如，在为锁生成防护令牌时（参见第 303 页 “防护令牌”），我们可能要求该算法具备以下特性：
+
+- **唯一性**：任意两次防护令牌的请求，都不会返回相同的数值。
+- **单调性序列**：若请求x返回的令牌为tx，请求y返回的令牌为ty，且请求x在请求y开始之前完成，则有 tx<ty。
+- **可用性**：发起防护令牌请求且未发生崩溃的节点，最终都会收到响应。
+
+An algorithm is correct in some system model if it always satisfies its properties in allsituations that we assume may occur in that system model. But how does this makesense? If all nodes crash, or all network delays suddenly become infinitely long, thenno algorithm will be able to get anything done.
+
+若一个算法在某个系统模型所假设的**所有可能发生的场景**中，均能始终满足其既定特性，那么该算法在这个系统模型中就是正确的。但这一说法如何才能成立呢？如果所有节点都发生崩溃，或者所有网络延迟突然变得无限长，那么任何算法都无法完成任务。
+
+**Safety and liveness**
+
+**安全属性与活性属性**
+
+To clarify the situation, it is worth distinguishing between two different kinds ofproperties: **safety** and **liveness** properties. In the example just given, **uniqueness** and **monotonic sequence** are safety properties, but **availability** is a liveness property.
+
+为了厘清这一情况，我们有必要区分两类不同的属性：**安全属性**与**活性属性**。在刚才的示例中，**唯一性**与**单调性序列**属于安全属性，而**可用性**则属于活性属性。
+
+What distinguishes the two kinds of properties? A giveaway is that liveness propertiesoften include the word “**eventually**” in their definition. (And yes, you guessed it—**eventual consistency is a liveness property** [89].)
+
+这两类属性的区别是什么？一个显著特征是，活性属性的定义中往往包含 “最终” 一词。（没错，你可以猜到 ——**最终一致性**就是一种活性属性 [89]。）
+
+Safety is often informally defined as **nothing bad happens,** and liveness as **something good eventually happens**. However, it’s best to not read too much into those informaldefinitions, because the meaning of good and bad is subjective. The actual definitionsof safety and liveness are precise and mathematical [90]:
+
+- If a safety property is violated, we can point at a particular point in time at which it was broken (for example, if the uniqueness property was violated, we can iden‐ tify the particular operation in which a duplicate fencing token was returned). After a safety property has been violated, the violation cannot be undone—the damage is already done.
+- A liveness property works the other way round: it may not hold at some point in time (for example, a node may have sent a request but not yet received a response), but there is always hope that it may be satisfied in the future (namely by receiving a response).
+
+安全属性的通俗定义通常是 **“不会发生任何糟糕的情况”**，而活性属性则是**“好事最终总会发生”**。不过，我们不宜过度解读这些通俗定义，因为 “好” 与 “坏” 的界定具有主观性。安全属性与活性属性的准确定义，是严谨且具备数学依据的 [90]：
+
+- 若某一安全属性被违反，我们可以明确指出它被破坏的**具体时间点**（例如，若唯一性属性被违反，我们能够定位到返回重复防护令牌的那次具体操作）。安全属性一旦被违反，这种违规状态便无法逆转 —— 损害已经造成。
+- 活性属性的逻辑则恰好相反：它可能在某个时间点不成立（例如，某个节点已发送请求但尚未收到响应），但我们始终有理由相信，它在**未来某一时刻可以得到满足**（也就是通过接收响应来达成）。
+
+An advantage of distinguishing between safety and liveness properties is that it helpsus deal with difficult system models. For distributed algorithms, it is common torequire that **safety properties always hold, in all possible situations of a system model**[88]. That is, even if all nodes crash, or the entire network fails, the algorithm mustnevertheless ensure that it does not return a wrong result (i.e., that the safety proper‐ties remain satisfied).
+
+区分安全属性与活性属性的一大好处，在于它能帮助我们应对复杂的系统模型。对于分布式算法而言，一个常见的要求是：**安全属性必须在系统模型的所有可能场景下始终成立**[88]。也就是说，即便所有节点崩溃、或整个网络瘫痪，算法也必须保证不会返回错误结果（即安全属性始终得到满足）。
+
+### Summary
+
+ In this chapter we also went on some tangents to explore whether the unreliability ofnetworks, clocks, and processes is an inevitable law of nature. We saw that it isn’t: it is possible to give hard realtime response guarantees and bounded delays in networks, but doing so is very expensive and results in lower utilization of hardwareresources. Most non-safety-critical systems choose cheap and unreliable over expensive and reliable.
+
+在本章中，我们还穿插探讨了一些延伸话题，旨在弄清**网络、时钟与进程的不可靠性是否属于不可规避的自然规律**。而我们得到的结论是：并非如此。硬实时响应保证与网络有界延迟**是可以实现的**，但这种实现的成本极其高昂，并且会导致硬件资源利用率降低。对于大多数**非安全关键系统**而言，它们更倾向于选择**廉价但不可靠**的方案，而非**昂贵但可靠**的方案。
+
+## Chapter 9. Consistency and Consensus
+
+**第九章. 一致性和共识**
+
+The best way of building fault-tolerant systems is to find some **general-purpose abstractions with useful guarantees**, implement them once, and then let applicationsrely on those guarantees. This is the same approach as we used with transactions inChapter 7: by using a transaction, the application can pretend that there are nocrashes (atomicity), that nobody else is concurrently accessing the database (isola‐tion), and that storage devices are perfectly reliable (durability). Even though crashes,race conditions, and disk failures do occur, the transaction abstraction hides thoseproblems so that the application doesn’t need to worry about them.
+
+构建容错系统的最佳方式，是提炼出若干具备**实用保障机制的通用抽象**，对其进行一次性实现，而后让上层应用直接依赖这些保障机制运行。这与我们在第 7 章中讨论事务时采用的思路如出一辙：通过使用事务，应用程序可以**无需考虑**崩溃问题（原子性）、无需考虑其他主体并发访问数据库的情况（隔离性），也无需考虑存储设备的可靠性问题（持久性）。尽管崩溃、竞态条件和磁盘故障实际都会发生，但事务抽象会将这些问题完全屏蔽，让应用程序无需再为其费心。
+
+### Linearizability
+
+**线性一致性**
+
+#### What Makes a System Linearizable?
+
+**什么样的系统具备线性一致性？**
+
+**Linearizability Versus Serializability**
+
+**线性一致性与可串行化的区别**
+
+Linearizability is easily confused with serializability (see “Serializability” on page 251),as both words seem to mean something like “can be arranged in a sequential order.”However, they are two quite different guarantees, and it is important to distinguishbetween them:
+
+线性一致性很容易与可串行化混淆（参见第 251 页 “可串行化”），这两个术语的字面意思都近似于 “可按某种顺序排列”。但实际上，二者是两种截然不同的保障机制，厘清它们的区别至关重要：
+
+**Serializability** Serializability is an isolation property of transactions, where every transaction may read and write multiple objects (rows, documents, records)—see “Single- Object and Multi-Object Operations” on page 228. It guarantees that transac‐ tions behave the same as if they had executed in some serial order (each transaction running to completion before the next transaction starts). It is okay for that serial order to be different from the order in which transactions were actually run [12].
+
+**可串行化** 可串行化是**事务的隔离属性**，适用于包含多对象（行、文档、记录）读写操作的事务场景（参见第 228 页 “单对象与多对象操作”）。它能保证：事务的执行效果，等价于所有事务按照某一种**串行顺序**依次执行 —— 即每个事务都完整执行完毕后，下一个事务才开始执行。这种串行顺序，允许与事务实际的执行顺序不一致 [1
+
+Linearizability Linearizability is a recency guarantee on reads and writes of a register (an indi‐ vidual object). It doesn’t group operations together into transactions, so it does not prevent problems such as write skew (see “Write Skew and Phantoms” on page 246), unless you take additional measures such as materializing conflicts (see “Materializing conflicts” on page 251).
+
+**线性一致性** 线性一致性是**寄存器（单个对象）读写操作的最新性保障**。它不会将多个操作分组为事务，因此无法防范写偏斜这类问题（参见第 246 页 “写偏斜与幻读”），除非额外采取物化冲突等措施（参见第 251 页 “物化冲突”）。
+
+A database may provide both serializability and linearizability, and this combinationis known as strict serializabilityor strong one-copy serializability(strong-1SR) [4, 13].Implementations of serializability based on two-phase locking (see “Two-Phase Lock‐ing (2PL)” on page 257) or actual serial execution (see “Actual Serial Execution” onpage 252) are typically linearizable.
+
+一个数据库可以同时提供可串行化与线性一致性这两种保障，这种组合特性被称为**严格可串行化**或**强单副本可串行化（strong-1SR）**[4,13]。基于两阶段锁（参见第 257 页 “两阶段锁（2PL）”）或严格串行执行（参见第 252 页 “严格串行执行”）实现的可串行化，通常具备线性一致性。
+
+However, serializable snapshot isolation (see “Serializable Snapshot Isolation (SSI)”on page 261) is not linearizable: by design, it makes reads from a consistent snapshot,to avoid lock contention between readers and writers. The whole point of a consistentsnapshot is that it does not include writes that are more recent than the snapshot, andthus reads from the snapshot are not linearizable.
+
+但**可串行化快照隔离（SSI）**（参见第 261 页 “可串行化快照隔离（SSI）”）**不具备线性一致性**：其设计初衷是让事务读取一致性快照，以此避免读写操作之间的锁竞争。而一致性快照的核心特点，就是不包含快照生成之后的新写入操作 —— 因此，基于快照的读取不满足线性一致性要求。
+
+#### Relying on Linearizability
+
+Similar issues arise if you want to ensure that a bank account balance never goes neg‐ative, or that you don’t sell more items than you have in stock in the warehouse, orthat two people don’t concurrently book the same seat on a flight or in a theater.These constraints all require there to be a single up-to-date value (the account balance, the stock level, the seat occupancy) that all nodes agree on.
+
+当你需要确保以下约束条件时，也会遇到类似的问题：银行账户余额绝不能为负、商品出库数量不超过仓库库存量、航班或剧院的同一个座位不会被两人同时预订。这些约束的实现，都需要一个**所有节点均认可的单一最新有效值**—— 即账户余额、库存数量、座位占用状态。
+
+In real applications, it is sometimes acceptable to treat such constraints loosely (forexample, if a flight is overbooked, you can move customers to a different flight andoffer them compensation for the inconvenience). In such cases, linearizability maynot be needed, and we will discuss such loosely interpreted constraints in “Timelinessand Integrity” on page 524.
+
+在实际业务场景中，这类约束有时可以宽松处理。例如，若航班出现超售情况，你可以为乘客改签至其他航班，并为其因此产生的不便提供补偿。在这类场景下，就不需要用到线性一致性；关于这类宽松约束的相关内容，我们将在第 524 页的 **“时效性与完整性”** 一节中展开讨论。
+
+However, a hard uniqueness constraint, such as the one you typically find in rela‐tional databases, requires linearizability. Other kinds of constraints, such as foreignkey or attribute constraints, can be implemented without requiring linearizability[19].
+
+但对于**硬性唯一性约束**（例如关系型数据库中常见的唯一性约束），则必须依赖线性一致性才能实现。而其他类型的约束（如外键约束或属性约束），即便不依赖线性一致性，同样可以实现 [19]。
+
+#### The Cost of Linearizability
+
+**线性一致性的成本**
+
+**The Unhelpful CAP Theorem**
+
+**并无实际指导意义的 CAP 定理**
+
+CAP is sometimes presented as **Consistency**, **Availability**, **Partition tolerance**: pick 2out of 3. Unfortunately, putting it this way is misleading [32] because network parti‐tions are a kind of fault, so they aren’t something about which you have a choice: theywill happen whether you like it or not [38].
+
+CAP 定理有时被阐释为**一致性（Consistency）、可用性（Availability）、分区容错性（Partition tolerance）三者选其二**。但遗憾的是，这种表述具有误导性 [32]—— 因为网络分区属于一种故障类型，它的发生并不以人的意志为转移，无论你是否愿意，它迟早都会出现 [38]。
+
+At times when the network is working correctly, a system can provide both **consistency (linearizability)** and **total availability**. When a network fault occurs, you have tochoose between either **linearizability** or **total availability**. Thus, a better way of phras‐ing CAP would be either Consistent or Available when Partitioned[39]. A more relia‐ble network needs to make this choice less often, but at some point the choice isinevitable.
+
+在网络正常运行时，系统可以同时提供**一致性（线性一致性）\**与\**完全可用性**。而当网络故障导致分区发生时，你就必须在**线性一致性**与**完全可用性**之间做出取舍。因此，对 CAP 定理更准确的表述应当是：**发生网络分区时，一致性与可用性二者择一**[39]。网络可靠性越高，需要做出这种取舍的频率就越低，但从根本上来说，这种选择是无法避免的。
+
+In discussions of CAP there are several contradictory definitions of the term availa‐bility, and the formalization as a theorem [30] does not match its usual meaning [40].Many so-called “highly available” (fault-tolerant) systems actually do not meet CAP’sidiosyncratic definition of availability. All in all, there is a lot of misunderstandingand confusion around CAP, and it does not help us understand systems better, soCAP is best avoided.
+
+在关于 CAP 定理的讨论中，“可用性” 这一术语存在多种相互矛盾的定义，该定理的形式化定义 [30] 与 “可用性” 的常规含义并不相符 [40]。许多所谓的 “高可用”（容错）系统，实际上并不符合 CAP 定理中对可用性的特殊定义。总而言之，围绕 CAP 定理存在大量的误解与混淆，它不仅无法帮助我们更深入地理解系统，反而可能造成困扰，因此最好尽量避免过度依赖这一理论。
+
+The CAP theorem as formally defined [30] is of very narrow scope: it only considersone consistency model (namely linearizability) and one kind of fault (network parti‐tions,vi or nodes that are alive but disconnected from each other). It doesn’t say anything about network delays, dead nodes, or other trade-offs. Thus, although CAP hasbeen historically influential, it has little practical value for designing systems [9, 40].
+
+从形式化定义来看 [30]，CAP 定理的适用范围非常狭窄：它只考量了一种一致性模型（即线性一致性）和一种故障类型（网络分区，也就是节点存活但彼此断开连接的情况）。对于网络延迟、节点宕机，以及其他需要权衡的因素，该定理并未提及。因此，尽管 CAP 定理在历史上具有一定的影响力，但对于实际的系统设计而言，它的实用价值十分有限 [9,40]。
+
+Can’t we maybe find a **more efficient implementation of linearizable storage**? Itseems the answer is no: Attiya and Welch [47] prove that if you want linearizability,the response time of read and write requests is at least proportional to the **uncertainty of delays in the network**. In a network with highly variable delays, like most com‐puter networks (see “Timeouts and Unbounded Delays” on page 281), the responsetime of linearizable reads and writes is inevitably going to be high. A faster algorithmfor linearizability does not exist, but **weaker consistency models** can be much faster,so this trade-off is important for latency-sensitive systems. In Chapter 12 we will dis‐cuss some approaches for avoiding linearizability without sacrificing correctness.
+
+难道我们就不能找到一种**更高效的线性一致性存储实现方案**吗？答案似乎是否定的：阿提亚（Attiya）与韦尔奇（Welch）[47] 证明，若要实现线性一致性，读写请求的响应时间至少与**网络延迟的不确定性成正比**。对于延迟高度可变的网络（如多数计算机网络，参见第 281 页的《超时与无界延迟》一节）而言，线性一致性读写的响应时间必然会处于较高水平。目前并不存在更快速的线性一致性实现算法，但**弱一致性模型**的执行效率可以提升很多，因此这种权衡对延迟敏感型系统而言至关重要。在第 12 章中，我们将探讨一些无需牺牲正确性、同时又能规避线性一致性的实现方案。
+
+### Ordering Guarantees
+
+**顺序保障**
+
+Causality imposes an ordering on events: cause comes before effect; a message is sentbefore that message is received; the question comes before the answer. And, like inreal life, one thing leads to another: one node reads some data and then writes some‐thing as a result, another node reads the thing that was written and writes somethingelse in turn, and so on. These chains of causally dependent operations define thecausal order in the system—i.e., what happened before what.
+
+因果关系会给事件施加一种先后顺序：**因**发生于**果**之前；消息的发送发生于该消息的接收之前；问题的提出发生于该问题的解答之前。与现实场景同理，事件的发生环环相扣：某个节点读取部分数据后，基于这些数据执行写入操作；另一个节点读取此次写入的结果，继而又执行新的写入操作，以此类推。这些**存在因果依赖的操作链**，定义了系统中的**因果顺序**—— 即哪些事件发生在哪些事件之前。
+
+If a system obeys the ordering imposed by causality, we say that it is **causally consistent.** For example, snapshot isolation provides causal consistency: when you readfrom the database, and you see some piece of data, then you must also be able to seeany data that causally precedes it (assuming it has not been deleted in the meantime).
+
+若一个系统遵循因果关系所施加的顺序规则，我们就称该系统具备**因果一致性**。例如，快照隔离就能够提供因果一致性：当你从数据库中读取数据时，若能看到某一份数据，那么你也一定能看到所有在因果关系上先于这份数据产生的数据（前提是这些前置数据在此期间未被删除）。
+
+
+
+**The Causal order is not a total order**
+
+**因果顺序并非全序**
+
+The difference between a total order and a partial order is reflected in different data‐base consistency models:
+
+全序与偏序的区别，体现在不同的数据库一致性模型中：
+
+**Linearizability** In a linearizable system, we have a **total order** of operations: if the system behaves as if there is only a single copy of the data, and every operation is atomic, this means that for any two operations we can always say which one happened first. This total ordering is illustrated as a timeline in Figure 9-4.
+
+**线性一致性** 在一个线性一致性系统中，所有操作遵循**全序关系**：如果系统的表现就如同只有一份数据副本，且每个操作都是原子性的，那么这意味着对于任意两个操作，我们始终能够判定二者的先后顺序。这种全序关系可以用图 9-4 中的时间线直观表示。
+
+**Causality** We said that two operations are **concurrent** if neither happened before the other (see “The “happens-before” relationship and concurrency” on page 186). Put another way, two events are ordered if they are causally related (one happened before the other), but they are incomparable if they are concurrent. This means that causality defines a partial order, not a total order: some operations are ordered with respect to each other, but some are incomparable.
+
+**因果关系** 我们曾定义：若两个操作之间不存在 “先发生” 关系，则称这两个操作是**并发**的（参见第 186 页 “‘先发生’关系与并发”）。换而言之，若两个事件存在因果关联（一个事件发生在另一个事件之前），则二者存在明确的先后顺序；若两个事件是并发的，则二者之间**无法比较先后**。这意味着因果关系定义的是一种**偏序关系**，而非全序关系：部分操作之间存在明确的先后顺序，但部分操作之间无法比较。
+
+Therefore, according to this definition, **there are no concurrent operations in a linearizable datastore**: there must be a single timeline along which all operations aretotally ordered. There might be several requests waiting to be handled, but the data‐store ensures that every request is handled atomically at a single point in time, actingon a single copy of the data, along a single timeline, without any concurrency.
+
+因此，根据这个定义，**线性一致性数据存储中不存在并发操作**：所有操作必须沿着一条单一的时间线构成全序关系。系统中可能存在多个等待处理的请求，但数据存储会确保每个请求都在某个时间点被原子性地处理，基于唯一的数据副本、遵循单一的时间线执行，不存在任何并发情况。
+
+Concurrency would mean that the timeline branches and merges again—and in thiscase, operations on different branches are incomparable (i.e., concurrent). We sawthis phenomenon in Chapter 5: for example, Figure 5-14 is not a straight-line totalorder, but rather a jumble of different operations going on concurrently. The arrowsin the diagram indicate causal dependencies—the partial ordering of operations.
+
+并发意味着时间线会产生分支，之后又会合并 —— 在这种情况下，不同分支上的操作之间无法比较先后（即处于并发状态）。我们在第 5 章中已经见过这种现象：例如，图 5-14 所展示的并非一条线性的全序关系，而是多个操作并发执行的混杂状态。图中的箭头代表了因果依赖关系，也就是操作之间的偏序关系。
+
+If you are familiar with distributed version control systems such as Git, their versionhistories are very much like the graph of causal dependencies. Often one commithappens after another, in a straight line, but sometimes you get branches (when sev‐eral people concurrently work on a project), and merges are created when those con‐currently created commits are combined.
+
+如果你熟悉 Git 这类**分布式版本控制系统**，就会发现它们的版本历史与因果依赖关系图非常相似。版本提交通常会沿着一条直线依次进行，但有时也会产生分支（比如多人并发协作同一个项目时）；当这些并发创建的提交被整合到一起时，就会形成合并记录。
+
+
+
+**Linearizability is stronger than causal consistency**
+
+**线性一致性强于因果一致性**
+
+So what is the relationship between the causal order and linearizability? The answer is that **linearizability implies causality**: any system that is linearizable will preserve causality correctly [7]. In particular, if there are multiple communication channels in asystem (such as the message queue and the file storage service in Figure 9-5), lineariz‐ability ensures that causality is automatically preserved without the system having todo anything special (such as passing around timestamps between different components).
+
+那么，因果顺序与线性一致性之间存在怎样的关系？答案是**线性一致性蕴含因果一致性**：任何具备线性一致性的系统，都能正确地保持因果关系 [7]。具体来说，若系统中存在多条通信渠道（例如图 9-5 中的消息队列与文件存储服务），线性一致性可以确保因果关系被自动维持，无需系统采取任何特殊手段（比如在不同组件之间传递时间戳）。
+
+The fact that linearizability ensures causality is what makes linearizable systems sim‐ple to understand and appealing. However, as discussed in “The Cost of Linearizabil‐ity” on page 335, making a system linearizable can harm its performance andavailability, especially if the system has significant network delays (for example, if it’sgeographically distributed). For this reason, some distributed data systems haveabandoned linearizability, which allows them to achieve better performance but canmake them difficult to work with.
+
+线性一致性能够保障因果关系这一特性，让线性一致性系统易于理解且颇具吸引力。但正如第 335 页《线性一致性的成本》一节所讨论的，实现系统的线性一致性可能会损害其性能与可用性，在系统存在显著网络延迟的场景下（例如地理分布式系统），这种负面影响尤为突出。正因如此，部分分布式数据系统舍弃了线性一致性 —— 这一做法能换取更优的性能表现，但也会提升系统的使用难度。
+
+The good news is that a middle ground is possible. Linearizability is not the only wayof preserving causality—there are other ways too. A system can be causally consistentwithout incurring the performance hit of making it linearizable (in particular, theCAP theorem does not apply). **In fact, causal consistency is the strongest possibleconsistency model that does not slow down due to network delays, and remainsavailable in the face of network failures** [2, 42].
+
+好消息是，我们可以找到一种**折中方案**。线性一致性并非保持因果关系的唯一方式，还存在其他替代方案。系统可以在不承担线性一致性带来的性能损耗的前提下，实现因果一致性（值得一提的是，这种情况下 CAP 定理不再适用）。实际上，因果一致性是这样一种一致性模型：它是**不会因网络延迟而降低速度、且在网络故障发生时仍能保持可用的最强一致性模型**[2,42]。
+
+In many cases, systems that appear to require linearizability in fact only really requirecausal consistency, which can be implemented more efficiently. Based on this obser‐vation, researchers are exploring new kinds of databases that preserve causality, withperformance and availability characteristics that are similar to those of eventuallyconsistent systems [49, 50, 51].
+
+在许多场景下，**看似需要线性一致性的系统**，实际上往往只需要因果一致性即可 —— 而因果一致性的实现效率更高。基于这一发现，研究人员正在探索**具备因果一致性保障能力的新型数据库**，这类数据库的性能与可用性表现，与最终一致性系统相近 [49,50,51]。
