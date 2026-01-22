@@ -1314,7 +1314,145 @@ Total order broadcast is also useful for implementing a lock service that provid
 
 全序广播还可用于实现支持**围栏令牌**的锁服务（详见第 303 页《围栏令牌》）。所有获取锁的请求都会作为消息追加到日志中，日志中的消息会按照顺序被分配一个连续的序列号。这个序列号即可作为围栏令牌，因为它具备单调递增的特性。在 ZooKeeper 中，该序列号被称为 **zxid**[15]。
 
+**Implementing linearizable storage using total order broadcast**
 
+**基于全序广播实现线性化存储**
+
+Total order broadcast is asynchronous: messages are guaranteed to be delivered relia‐bly in a fixed order, but there is no guarantee about when a message will be delivered(so one recipient may lag behind the others). By contrast, linearizability is a recencyguarantee: a read is guaranteed to see the latest value written.
+
+全序广播是**异步**的：它能确保消息以固定顺序实现可靠投递，但并不保证消息的投递时间（因此部分接收方可能会落后于其他节点）。相比之下，**线性化**是一种**最新值保证**：读取操作一定能获取到最新写入的数据值。
+
+However, if you have total order broadcast, you can build linearizable storage on topof it. For example, you can ensure that usernames uniquely identify user accounts.
+
+不过，基于全序广播机制，我们可以构建出线性化存储。例如，利用这一方式能够确保用户名可以唯一标识用户账户。
+
+Imagine that for every possible username, you can have a linearizable register with anatomic compare-and-set operation. Every register initially has the value null (indi‐ cating that the username is not taken). When a user wants to create a username, youexecute a compare-and-set operation on the register for that username, setting it tothe user account ID, under the condition that the previous register value is null. Ifmultiple users try to concurrently grab the same username, only one of the compare-and-set operations will succeed, because the others will see a value other than null (due to linearizability).
+
+我们可以这样设想：为每一个可能被使用的用户名配置一个线性化寄存器，该寄存器支持**原子化比较并设置操作**。所有寄存器的初始值均为 `null`（表示对应的用户名尚未被占用）。当用户想要注册某一用户名时，就对该用户名对应的寄存器执行比较并设置操作 —— 若寄存器当前值为 `null`，则将其更新为该用户的账户 ID。
+
+You can implement such a linearizable compare-and-set operation as follows byusing total order broadcast as an **append-only log** [62, 63]:
+
+1. Append a message to the log, tentatively indicating the username you want to claim.
+2. Read the log, and wait for the message you appended to be delivered back to you.xi
+3. Check for any messages claiming the username that you want. If the first message for your desired username is your own message, then you are successful: you can commit the username claim (perhaps by appending another message to the log) and acknowledge it to the client. If the first message for your desired username is from another user, you abort the operation.
+
+借助全序广播构建一个**追加式日志**，我们就能实现上述的线性化比较并设置操作，具体流程如下 [62, 63]：
+
+1. 向日志中追加一条消息，暂存声明要占用的用户名相关信息。
+2. 读取日志内容，并等待自己追加的这条消息被回传给自身。
+3. 检查日志中是否存在其他声明占用该用户名的消息。
+   - 若针对该用户名的第一条声明消息来自于自身，则操作成功：你可以提交用户名占用声明（方式之一是向日志中再追加一条确认消息），并向客户端返回操作成功的响应。
+   - 若针对该用户名的第一条声明消息来自其他用户，则终止本次操作。
+
+Because log entries are delivered to all nodes in the same order, if there are severalconcurrent writes, all nodes will agree on which one came first. Choosing the first ofthe conflicting writes as the winner and aborting later ones ensures that all nodesagree on whether a write was committed or aborted. A similar approach can be usedto implement **serializable multi-object transactions** on top of a log [62].
+
+由于**日志条目**会以相同的顺序投递至所有节点，因此即便存在多笔并发写入操作，所有节点也会对这些操作的先后顺序形成一致共识。我们可以将存在冲突的写入操作中，排在首位的那一笔判定为执行成功，其余后续操作则终止执行。这种处理方式能够确保所有节点对某笔写入操作最终是提交还是终止，达成完全一致的结论。基于类似的思路，我们还可以在日志之上实现支持**可串行化的多对象事务**[62]。
+
+While this procedure ensures linearizable writes, it doesn’t guarantee linearizablereads—if you read from a store that is asynchronously updated from the log, it maybe stale. (To be precise, the procedure described here provides **sequential consistency**[47, 64], sometimes also known as **timeline consistency** [65, 66], a slightly weakerguarantee than linearizability.) To make reads linearizable, there are a few options:
+
+- You can sequence reads through the log by appending a message, reading the log,and performing the actual read when the message is delivered back to you. The message’s position in the log thus defines the point in time at which the read happens. (Quorum reads in etcd work somewhat like this [16].)
+- If the log allows you to fetch the position of the latest log message in a linearizable way, you can query that position, wait for all entries up to that position to be delivered to you, and then perform the read. (This is the idea behind Zoo‐ Keeper’s sync() operation [15].)
+- You can make your read from a replica that is synchronously updated on writes,and is thus sure to be up to date. (This technique is used in chain replication [63]; see also “Research on Replication” on page 155.)
+
+上述流程虽能保障写入操作的线性化，但无法确保读取操作的线性化 —— 如果读取操作的数据源是一个通过日志异步更新的存储副本，那么读取到的数据就可能是过期的。（准确来说，此处描述的流程提供的是**顺序一致性**[47, 64]，该一致性模型有时也被称为**时间线一致性**[65, 66]，其保障强度略低于线性化一致性。）若要实现线性化读取，可采用以下几种方案：
+
+1. 将读取操作也纳入日志的排序流程：先向日志中追加一条消息，随后读取日志内容，待这条消息被回传至自身时，再执行实际的读取操作。如此一来，该消息在日志中的位置，就定义了读取操作发生的时间点。（etcd 中的**仲裁读**机制，工作原理与此类似 [16]。）
+2. 如果日志支持以线性化的方式获取最新日志条目的位置，那么可以先查询该位置，等待所有序号不大于该位置的日志条目全部投递至本地后，再执行读取操作。（这正是 ZooKeeper 中 `sync()` 操作的设计思路 [15]。）
+3. 选择从一个**写入同步更新**的副本中读取数据，这类副本的数据状态可以确保是实时最新的。（该技术被应用于**链式复制**协议中 [63]；相关内容亦可参考第 155 页的《复制技术研究》。）
+
+**Implementing total order broadcast using linearizable storage**
+
+**基于线性化存储实现全序广播**
+
+The last section showed how to build a linearizable compare-and-set operation from total order broadcast. We can also turn it around, assume that we have linearizable storage, and show how to build total order broadcast from it.
+
+上一节介绍了如何基于全序广播实现线性化比较并设置操作。我们也可以**反过来**，假设已经具备线性化存储能力，再基于它来构建全序广播机制。
+
+The easiest way is to assume you have a linearizable register that stores an integer andthat has an **atomic increment-and-get operation** [28]. Alternatively, an atomic compare-and-set operation would also do the job.
+
+实现这一目标的最简方式，是假定存在一个存储整数的线性化寄存器，且该寄存器支持**原子化自增获取操作**[28]。当然，使用原子化比较并设置操作也能达成同样的效果。
+
+The algorithm is simple: for every message you want to send through total orderbroadcast, you increment-and-get the linearizable integer, and then attach the valueyou got from the register as a sequence number to the message. You can then sendthe message to all nodes (resending any lost messages), and the recipients will deliverthe messages consecutively by sequence number.
+
+对应的算法十分简洁：对于每一条需要通过全序广播发送的消息，先对这个线性化整数执行原子化自增获取操作，再将从寄存器中获取的数值作为**序列号**附加到消息上。随后，将这条消息发送至所有节点（并重发所有丢失的消息），接收方则按照序列号的顺序依次投递消息。
+
+Note that unlike Lamport timestamps, the numbers you get from incrementing the linearizable register form a **sequence with no gaps**. Thus, if a node has delivered mes‐sage 4 and receives an incoming message with a sequence number of 6, it knows thatit must wait for message 5 before it can deliver message 6. The same is not the case with Lamport timestamps—in fact, this is the key difference between total order broadcast and timestamp ordering.
+
+需要注意的是，与兰波特时间戳不同，通过线性化寄存器自增得到的数值，生成的是一个**无间隙的连续序列**。因此，若某个节点已经投递了序列号为 4 的消息，此时收到一条序列号为 6 的消息，就知道必须先等待消息 5 投递完成，再处理消息 6。而兰波特时间戳则不具备这一特性 —— 实际上，这正是全序广播与时间戳排序的**核心区别**。
+
+How hard could it be to make a linearizable integer with an atomic increment-and-get operation? As usual, if things never failed, it would be easy: you could just keep itin a variable on one node. The problem lies in handling the situation when networkconnections to that node are interrupted, and restoring the value when that node fails[59]. In general, if you think hard enough about linearizable sequence number gener‐ators, you inevitably end up with a **consensus algorithm**.
+
+实现一个支持原子化自增获取操作的线性化整数寄存器，难度究竟有多大？和大多数分布式问题一样，如果系统永远不会发生故障，这件事会非常简单：只需在单个节点上用一个变量存储该整数即可。真正的难点在于，如何处理与该节点的网络连接中断的情况，以及节点故障后如何恢复该数值 [59]。通常来说，只要深入研究线性化序列号生成器的实现方案，最终都会不可避免地触及**共识算法**。
+
+This is no coincidence: it can be proved that a **linearizable compare-and-set (orincrement-and-get) register** and **total order broadcast** are both **equivalent to consensus** [28, 67]. That is, if you can solve one of these problems, you can transform it intoa solution for the others. This is quite a profound and surprising insight!
+
+这并非偶然现象：已有相关证明表明，支持原子化比较并设置（或自增获取）操作的线性化寄存器、全序广播，这两者在本质上都**与共识问题等价**[28, 67]。也就是说，只要能解决其中任意一个问题，就能将其转化为解决另外两个问题的方案。这是一个深刻且出人意料的结论！
+
+### Distributed Transactions and Consensus
+
+**分布式事务与共识**
+
+ In this section we will first examine the atomic commit problem in more detail. Inparticular, we will discuss the two-phase commit (2PC) algorithm, which is the mostcommon way of solving atomic commit and which is implemented in various data‐bases, messaging systems, and application servers. It turns out that 2PC is a kind ofconsensus algorithm—but not a very good one [70, 71].
+
+在本节中，我们将首先深入探讨**原子提交问题**。具体而言，我们会介绍**两阶段提交（2PC）算法**—— 这是解决原子提交问题最常用的方案，已在各类数据库、消息系统及应用服务器中落地实现。事实证明，2PC 本质上属于一种共识算法，只是其性能与可靠性表现并不算出色 [70, 71]。
+
+By learning from 2PC we will then work our way toward better consensus algorithms,such as those used in ZooKeeper (Zab) and etcd (Raft).
+
+我们将从 2PC 的设计思路与局限性中汲取经验，进而介绍性能更优的共识算法，例如 ZooKeeper 所采用的 Zab 算法与 etcd 所采用的 Raft 算法。
+
+#### Atomic Commit and Two-Phase Commit (2PC)
+
+**原子提交与两阶段提交（2PC）**
+
+In Chapter 7 we learned that the purpose of **transaction atomicity** is to provide sim‐ple semantics in the case where something goes wrong in the middle of making several writes. The outcome of a transaction is either a **successful commit**, in which caseall of the transaction’s writes are made durable, or an **abort**, in which case all of thetransaction’s writes are rolled back (i.e., undone or discarded).
+
+在第 7 章中我们已经了解到，**事务原子性**的设计目标，是在多笔写入操作执行过程中发生异常时，为系统提供简洁清晰的执行语义。事务的最终结果只有两种可能：要么**成功提交**，此时事务内的所有写入操作都会被持久化；要么**执行回滚**，此时事务内的所有写入操作都会被撤销（即取消或丢弃已执行的修改）。
+
+Atomicity prevents failed transactions from littering the database with half-finished results and half-updated state. This is especially important for **multi-object transactions** (see “Single-Object and Multi-Object Operations” on page 228) and databasesthat maintain secondary indexes. Each secondary index is a separate data structurefrom the primary data—thus, if you modify some data, the corresponding changeneeds to also be made in the secondary index. Atomicity ensures that the secondaryindex stays consistent with the primary data (if the index became inconsistent withthe primary data, it would not be very useful).
+
+原子性能够避免未完成的操作结果和半更新状态充斥数据库，这一点对于**多对象事务**（详见第 228 页《单对象与多对象操作》）以及维护二级索引的数据库而言，尤为关键。每一个二级索引都是独立于主数据的单独数据结构 —— 因此，当主数据被修改时，对应的二级索引也必须同步更新。原子性保障了二级索引与主数据的一致性（若索引与主数据出现不一致，其本身的价值就会大打折扣）。
+
+**From single-node to distributed atomic commit**
+
+**从单节点原子提交到分布式原子提交**
+
+For transactions that execute at a single database node, atomicity is commonly imple‐mented by the storage engine. When the client asks the database node to commit thetransaction, the database makes the transaction’s writes durable (typically in a write-ahead log; see “Making B-trees reliable” on page 82) and then appends a **commit record** to the log on disk. If the database crashes in the middle of this process, thetransaction is recovered from the log when the node restarts: if the commit recordwas successfully written to disk before the crash, the transaction is considered com‐mitted; if not, any writes from that transaction are rolled back.
+
+对于仅在单个数据库节点上执行的事务，原子性通常由存储引擎直接实现。当客户端向数据库节点发起事务提交请求时，数据库会先将事务的写入操作持久化（通常是写入预写式日志，详见第 82 页《保障 B 树的可靠性》），随后在磁盘日志中追加一条**提交记录**。若数据库在这一过程中发生崩溃，节点重启时会从日志中恢复事务状态：如果崩溃发生前，提交记录已成功写入磁盘，则判定该事务已提交；反之，则回滚该事务的所有写入操作。
+
+Thus, on a single node, transaction commitment crucially depends on the order inwhich data is durably written to disk: first the data, then the commit record [72]. Thekey deciding moment for whether the transaction commits or aborts is the momentat which the disk finishes writing the commit record: before that moment, it is stillpossible to abort (due to a crash), but after that moment, the transaction is commit‐ted (even if the database crashes). Thus, it is a single device (the controller of one par‐ticular disk drive, attached to one particular node) that makes the commit atomic.
+
+由此可见，在单节点场景下，事务能否成功提交，关键取决于数据持久化到磁盘的顺序：必须先写入业务数据，再写入提交记录 [72]。事务提交或回滚的**核心判定节点**，是磁盘完成提交记录写入的那一刻：在此之前，事务仍有因系统崩溃而被回滚的可能；而在此之后，无论数据库是否崩溃，该事务都已被判定为提交状态。因此，单节点事务的原子提交，实际上是由单个设备（即与该节点相连的某一磁盘驱动器的控制器）来保证的。
+
+However, what if multiple nodes are involved in a transaction? For example, perhapsyou have a multi-object transaction in a partitioned database, or a term-partitionedsecondary index (in which the index entry may be on a different node from the pri‐mary data; see “Partitioning and Secondary Indexes” on page 206). Most “NoSQL”distributed datastores do not support such distributed transactions, but various clus‐tered relational systems do (see “Distributed Transactions in Practice” on page 360).
+
+但如果事务涉及多个节点，情况又会如何？例如，在分区数据库中执行多对象事务，或是操作按词条分区的二级索引（索引条目与主数据可能存储在不同节点上，详见第 206 页《分区与二级索引》）。大多数 “非关系型” 分布式数据存储系统不支持此类分布式事务，但许多集群式关系型数据库系统对此提供了支持（详见第 360 页《实践中的分布式事务》）。
+
+In these cases, it is not sufficient to simply send a commit request to all of the nodesand independently commit the transaction on each one. In doing so, it could easilyhappen that the commit succeeds on some nodes and fails on other nodes, whichwould violate the atomicity guarantee:
+
+- Some nodes may detect a constraint violation or conflict, making an abort necessary, while other nodes are successfully able to commit.
+- Some of the commit requests might be lost in the network, eventually aborting due to a timeout, while other commit requests get through.
+- Some nodes may crash before the commit record is fully written and roll back on recovery, while others successfully commit.
+
+在分布式场景中，简单地向所有节点发送提交请求、并让各节点独立提交事务的做法是行不通的。这种方式极易导致部分节点提交成功、部分节点提交失败，从而违背原子性保障，具体原因如下：
+
+1. 部分节点可能检测到约束违规或数据冲突，必须执行回滚操作，而其他节点却能够成功提交事务。
+2. 部分提交请求可能在网络传输中丢失，最终因超时而触发回滚，而其他提交请求则成功送达并执行。
+3. 部分节点可能在提交记录完全写入磁盘前发生崩溃，重启后会回滚事务，而其他节点则成功完成提交。
+
+If some nodes commit the transaction but others abort it, the nodes become inconsis‐tent with each other (like in Figure 7-3). And once a transaction has been committedon one node, it cannot be retracted again if it later turns out that it was aborted onanother node. For this reason, a node must only commit once it is certain that allother nodes in the transaction are also going to commit.
+
+若部分节点提交了事务，而另一些节点执行了回滚，节点之间的状态就会出现不一致（如图 7-3 所示）。而且，事务一旦在某一节点提交，即便后续发现其他节点执行了回滚，也无法撤销该节点的提交操作。正因如此，任一节点都必须在确认**事务涉及的所有其他节点均会提交**后，才能执行自身的提交操作。
+
+A transaction commit must be irrevocable—you are not allowed to change yourmind and retroactively abort a transaction after it has been committed. The reasonfor this rule is that once data has been committed, it becomes visible to other transac‐tions, and thus other clients may start relying on that data; this principle forms thebasis of read committedisolation, discussed in “Read Committed” on page 234. If atransaction was allowed to abort after committing, any transactions that read thecommitted data would be based on data that was retroactively declared not to haveexisted—so they would have to be reverted as well.
+
+事务的提交操作必须是**不可撤销**的 —— 事务提交后，不允许再改变决策，对其进行回溯性回滚。制定这条规则的原因在于：事务提交后，其修改的数据会对其他事务可见，其他客户端可能会基于这些数据执行新的操作；这一原则正是**读已提交隔离级别**的设计基础（详见第 234 页《读已提交》）。若允许事务提交后再执行回滚，所有读取过该事务提交数据的其他事务，就会基于 “事后被宣告为不存在” 的数据进行操作 —— 这些事务同样需要被回滚，这会造成连锁反应。
+
+(It is possible for the effects of a committed transaction to later be undone byanother, compensating transaction [73, 74]. However, from the database’s point ofview this is a separate transaction, and thus any cross-transaction correctnessrequirements are the application’s problem.)
+
+（当然，已提交事务产生的影响，后续可通过另一个独立的**补偿事务**来抵消 [73,74]。但从数据库的角度来看，补偿事务属于全新的独立事务，因此，跨事务的一致性保障需求，需要由业务应用层自行处理。）
+
+### 
 
 
 
