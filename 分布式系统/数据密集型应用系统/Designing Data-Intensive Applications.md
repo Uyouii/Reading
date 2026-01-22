@@ -1452,7 +1452,258 @@ A transaction commit must be irrevocable—you are not allowed to change yourmin
 
 （当然，已提交事务产生的影响，后续可通过另一个独立的**补偿事务**来抵消 [73,74]。但从数据库的角度来看，补偿事务属于全新的独立事务，因此，跨事务的一致性保障需求，需要由业务应用层自行处理。）
 
-### 
 
 
+**Coordinator failure**
+
+**协调者故障**
+
+We have discussed what happens if one of the participants or the network fails during2PC: if any of the prepare requests fail or time out, the coordinator aborts the trans‐action; if any of the commit or abort requests fail, the coordinator retries them indefinitely. However, it is less clear what happens if the coordinator crashes.
+
+我们已经讨论过，在两阶段提交（2PC）过程中，若某个参与者或网络发生故障会出现何种情况：若任一预提交请求失败或超时，协调者则会中止该事务；若任一提交或中止请求失败，协调者会无限重试这些请求。但协调者若发生崩溃，后续的处理逻辑则相对复杂。
+
+If the coordinator fails before sending the prepare requests, a participant can safelyabort the transaction. But once the participant has received a prepare request andvoted “yes,” it can no longer abort unilaterally—it must wait to hear back from thecoordinator whether the transaction was committed or aborted. If the coordinatorcrashes or the network fails at this point, the participant can do nothing but wait. Aparticipant’s transaction in this state is called in doubtor uncertain.
+
+如果协调者在发送预提交请求之前崩溃，参与者可以安全地中止该事务。但一旦参与者收到预提交请求并投票同意，它就不能再单方面中止事务 —— 必须等待协调者反馈，确认该事务最终是提交还是中止。若此时协调者崩溃或网络发生故障，参与者除了等待外别无选择。处于这种状态的参与者事务，被称为**疑态事务**或**未决事务**。
+
+The situation is illustrated in Figure 9-10. In this particular example, the coordinatoractually decided to commit, and database 2 received the commit request. However,the coordinator crashed before it could send the commit request to database 1, and sodatabase 1 does not know whether to commit or abort. Even a timeout does not helphere: if database 1 unilaterally aborts after a timeout, it will end up inconsistent withdatabase 2, which has committed. Similarly, it is not safe to unilaterally commit,because another participant may have aborted.
+
+这种情况可通过图 9-10 来阐释。在这个具体示例中，协调者实际上已经决定提交事务，且数据库 2 也已收到提交请求。但协调者在向数据库 1 发送提交请求前发生崩溃，导致数据库 1 无法确定应该提交还是中止事务。此时，即使等待超时也无济于事：如果数据库 1 在超时后单方面中止事务，会与已执行提交操作的数据库 2 产生数据不一致；同理，单方面提交也存在风险，因为其他参与者有可能已经中止了事务。
+
+![微信图片_20260122232117_189_109](../../images/distribuide_system/Figure-9-10.jpg)
+
+Without hearing from the coordinator, the participant has no way of knowingwhether to commit or abort. In principle, the participants could communicate amongthemselves to find out how each participant voted and come to some agreement, butthat is not part of the 2PC protocol.
+
+在未收到协调者反馈的情况下，参与者无法判断应该执行提交还是中止操作。理论上，参与者之间可以互相通信，确认彼此的投票结果并达成一致决议，但这并不属于两阶段提交协议的范畴。
+
+The only way 2PC can complete is by waiting for the coordinator to recover. This iswhy the coordinator must write its commit or abort decision to a transaction log ondisk before sending commit or abort requests to participants: when the coordinatorrecovers, it determines the status of all in-doubt transactions by reading its transac‐tion log. Any transactions that don’t have a commit record in the coordinator’s logare aborted. Thus, the commit point of 2PC comes down to a regular single-nodeatomic commit on the coordinator.
+
+两阶段提交协议能够完成事务处理的唯一方式，就是等待协调者恢复。这也是为什么协调者必须在向参与者发送提交或中止请求之前，将自身的提交 / 中止决策写入磁盘上的事务日志：当协调者恢复后，会通过读取事务日志来确定所有疑态事务的状态。凡是在协调者日志中没有提交记录的事务，一律视为中止。由此可见，两阶段提交的提交点，最终取决于协调者节点上一次常规的单节点原子提交操作。
+
+
+
+#### Fault-Tolerant Consensus
+
+**容错共识**
+
+Informally, consensus means getting several nodes to agree on something. For exam‐ple, if several people concurrently try to book the last seat on an airplane, or the same seat in a theater, or try to register an account with the same username, then a consensus algorithm could be used to determine which one of these mutually incompatible operations should be the winner.
+
+通俗来讲，共识的含义是让多个节点就某一事项达成一致意见。例如，当多个人同时尝试预订某架飞机的最后一个座位、某剧院的同一个座位，或是注册同一个用户名时，就可以借助共识算法来判定，在这些互斥的操作中哪一个能够最终生效。
+
+The consensus problem is normally formalized as follows: one or more nodes mayproposevalues, and the consensus algorithm decides on one of those values. In theseat-booking example, when several customers are concurrently trying to buy the lastseat, each node handling a customer request may propose the ID of the customer it isserving, and the decision indicates which one of those customers got the seat.
+
+共识问题的形式化定义通常如下：一个或多个节点可以**提议**某个值，共识算法则从这些提议的值中选定一个作为最终决议。以座位预订的场景为例，当多名客户同时抢购最后一个座位时，每个处理客户请求的节点都可以提议自己所服务客户的 ID，而算法的最终决议则会明确哪一位客户成功订到该座位。
+
+In this formalism, a consensus algorithm must satisfy the following properties [25]:
+
+- **Uniform agreemen**t No two nodes decide differently.
+- **Integrity** No node decides twice.
+- **Validity** If a node decides value v, then v was proposed by some node.
+- **Termination** Every node that does not crash eventually decides some value.
+
+在这一形式化定义下，一个共识算法必须满足以下四个特性 [25]：
+
+1. **统一一致性**：所有节点的最终决议结果完全一致，不存在分歧。
+2. **完整性**：任何节点都不会做出两次及以上的决议。
+3. **有效性**：若某节点决议的值为`v`，则`v`必定是由某个节点提出的提议值。
+4. **终止性**：所有未发生崩溃的节点，最终都会得出一个确定的决议。
+
+The uniform agreement and integrity properties define the core idea of consensus:everyone decides on the same outcome, and once you have decided, you cannotchange your mind. The validity property exists mostly to rule out trivial solutions: forexample, you could have an algorithm that always decides null, no matter what wasproposed; this algorithm would satisfy the agreement and integrity properties, butnot the validity property.
+
+统一一致性与完整性定义了共识的核心内涵：所有参与者的决议结果保持一致，且一旦做出决议，便不可更改。有效性这一特性的存在，主要是为了排除无意义的方案。例如，存在这样一种算法，无论节点提出何种提议值，它始终将`null`作为决议结果 —— 该算法虽然满足一致性和完整性，但并不满足有效性。
+
+The **termination** property formalizes the idea of fault tolerance. It essentially says thata consensus algorithm cannot simply sit around and do nothing forever—in otherwords, it must make progress. Even if some nodes fail, the other nodes must stillreach a decision. (Termination is a liveness property, whereas the other three aresafety properties—see “Safety and liveness” on page 308.) 
+
+终止性则是对**容错性**的形式化描述。其核心要义是，共识算法不能无限期地处于停滞状态，换句话说，它必须能够持续推进流程。即使部分节点发生故障，其余正常节点仍需达成最终决议。（终止性属于**活性属性**，而另外三个特性则属于**安全性属性**—— 参见第 308 页的 “安全性与活性”）。
+
+The system model of consensus assumes that when a node “crashes,” it suddenly dis‐appears and never comes back. (Instead of a software crash, imagine that there is anearthquake, and the datacenter containing your node is destroyed by a landslide. Youmust assume that your node is buried under 30 feet of mud and is never going tocome back online.) In this system model, any algorithm that has to wait for a node torecover is not going to be able to satisfy the termination property. In particular, 2PCdoes not meet the requirements for termination.
+
+共识算法的系统模型假定，当一个节点发生 “崩溃” 时，会直接停止运行且永不恢复。（这里可以抛开软件崩溃的场景想象一下：假如发生地震，承载节点的机房因山体滑坡被摧毁，你必须认定这个节点被埋在 30 英尺深的淤泥下，再也无法上线运行）。在该系统模型中，任何需要等待故障节点恢复后才能继续推进的算法，都无法满足终止性要求。**两阶段提交（2PC）** 正是如此，它不符合终止性的相关要求。
+
+Of course, if all nodes crash and none of them are running, then it is not possible forany algorithm to decide anything. There is a limit to the number of failures that analgorithm can tolerate: in fact, it can be proved that any consensus algorithm requiresat least a majority of nodes to be functioning correctly in order to assure termination[67]. That majority can safely form a quorum (see “Quorums for reading and writ‐ing” on page 179).
+
+当然，如果所有节点全部崩溃且无一正常运行，那么任何算法都无法做出任何决议。算法的容错能力存在上限：事实上，经证明，任何共识算法要想保证终止性，都需要至少**超过半数的节点保持正常运行**[67]。这部分占多数的节点能够可靠地构成一个**法定人数**（参见第 179 页的 “读写操作的法定人数机制”）。
+
+Thus, the termination property is subject to the assumption that fewer than half ofthe nodes are crashed or unreachable. However, most implementations of consensusensure that the safety properties—agreement, integrity, and validity—are always met,even if a majority of nodes fail or there is a severe network problem [92]. Thus, alarge-scale outage can stop the system from being able to process requests, but it can‐not corrupt the consensus system by causing it to make invalid decisions.
+
+因此，终止性的成立，是以**发生崩溃或无法连通的节点数量不超过总数的一半**为前提的。不过，绝大多数共识算法的实现都能确保，即便超过半数节点发生故障或出现严重的网络问题，**安全性属性**（一致性、完整性、有效性）也始终能够得到满足 [92]。也就是说，大规模故障可能会导致系统无法处理请求，但绝不会使共识系统做出无效决议，进而破坏系统的一致性。
+
+**Consensus algorithms and total order broadcast**
+
+**共识算法与全序广播**
+
+The best-known fault-tolerant consensus algorithms are **Viewstamped Replication(VSR)** [94, 95], **Paxos** [96, 97, 98, 99], **Raft** [22, 100, 101], and **Zab** [15, 21, 102]. Thereare quite a few similarities between these algorithms, but they are not the same [103].In this book we won’t go into full details of the different algorithms: it’s sufficient tobe aware of some of the high-level ideas that they have in common, unless you’reimplementing a consensus system yourself (which is probably not advisable—it’shard [98, 104]).
+
+最知名的容错共识算法包括**Viewstamped Replication，VSR**[94, 95]、**Paxos**[96, 97, 98, 99]、**Raft**[22, 100, 101] 以及 **Zab **[15, 21, 102]。这些算法之间存在诸多相似之处，但并非完全相同 [103]。本书不会深入探讨各类算法的完整细节 —— 只要了解它们共通的核心设计思路就足够了，除非你需要亲自实现一个共识系统（通常并不推荐，因为这项工作的难度极高 [98, 104]）。
+
+Most of these algorithms actually don’t directly use the formal model described here(proposing and deciding on a single value, while satisfying the agreement, integrity,validity, and termination properties). Instead, they decide on a sequence of values,which makes them **total order broadcast** algorithms, as discussed previously in thischapter (see “Total Order Broadcast” on page 348).
+
+事实上，这些算法大多并未直接采用前文所述的形式化模型（即对单一值进行提议与决议，同时满足一致性、完整性、有效性和终止性这四项特性）。相反，它们会对**一系列值**进行决议，这就使它们具备了全序广播算法的属性，相关内容已在本章前文提及（参见本书第 348 页的 “全序广播” 一节）。
+
+Remember that total order broadcast requires messages to be delivered exactly once,in the same order, to all nodes. If you think about it, this is equivalent to performingseveral rounds of consensus: in each round, nodes propose the message that theywant to send next, and then decide on the next message to be delivered in the totalorder [67].
+
+回顾一下，全序广播的核心要求是：**每条消息均仅投递一次，且所有节点收到的消息顺序完全一致**。细究起来，这一要求等价于执行多轮共识过程：在每一轮共识中，各节点提议自己接下来要发送的消息，然后共同决议出下一条要按全序投递的消息 [67]。
+
+So, **total order broadcast is equivalent to repeated rounds of consensus** (each consen‐sus decision corresponding to one message delivery):
+
+- Due to the **agreement property** of consensus, all nodes decide to deliver the same messages in the same order.
+- Due to the **integrity property**, messages are not duplicated.
+- Due to the **validity property**, messages are not corrupted and not fabricated out of thin air.
+- Due to the **termination property**, messages are not lost.
+
+由此可见，**全序广播等价于重复执行多轮共识**（每一次共识决议对应一条消息的投递），具体对应关系如下：
+
+1. 得益于共识算法的**一致性**特性，所有节点会按照完全相同的顺序投递相同的消息。
+2. 得益于共识算法的**完整性**特性，消息不会被重复投递。
+3. 得益于共识算法的**有效性**特性，消息不会被篡改，也不会凭空生成无中生有的消息。
+4. 得益于共识算法的**终止性**特性，消息不会丢失。
+
+Viewstamped Replication, Raft, and Zab implement total order broadcast directly,because that is more efficient than doing repeated rounds of one-value-at-a-timeconsensus. In the case of Paxos, this optimization is known as Multi-Paxos.
+
+Viewstamped Replication、Raft 与 Zab 均直接实现了全序广播功能，相比重复执行单值共识的方式，这种设计的效率更高。而在 Paxos 算法中，此类优化被称为**Multi-Paxos**。
+
+**Single-leader replication and consensus**
+
+**单主复制与共识**
+
+In Chapter 5 we discussed single-leader replication (see “Leaders and Followers” onpage 152), which takes all the writes to the leader and applies them to the followers inthe same order, thus keeping replicas up to date. Isn’t this essentially total orderbroadcast? How come we didn’t have to worry about consensus in Chapter 5?
+
+在本书第 5 章中，我们探讨过单主复制机制（参见第 152 页的 “主节点与从节点” 一节）。该机制会将所有写操作都路由至主节点，再按相同顺序同步至所有从节点，从而保证所有副本数据一致。这本质上不就是全序广播吗？那为什么在第 5 章中，我们完全不需要考虑共识相关的问题呢？
+
+The answer comes down to how the leader is chosen. If the leader is manually chosenand configured by the humans in your operations team, you essentially have a “con‐sensus algorithm” of the dictatorial variety: only one node is allowed to accept writes(i.e., make decisions about the order of writes in the replication log), and if that nodegoes down, the system becomes unavailable for writes until the operators manuallyconfigure a different node to be the leader. Such a system can work well in practice,but it does not satisfy the termination property of consensus because it requireshuman intervention in order to make progress.
+
+答案的核心在于**主节点的选举方式**。如果主节点是由运维人员手动选定并配置的，那么这种模式本质上就是一种**集权式 “共识算法”**：仅允许单个节点接收写操作（即由该节点决定复制日志中写操作的执行顺序）；一旦该主节点发生故障，系统的写服务就会陷入不可用状态，直到运维人员手动将另一个节点配置为主节点为止。这类系统在实际场景中可以稳定运行，但它并不满足共识算法的终止性要求 —— 因为系统的持续运转需要人工介入。
+
+**Epoch numbering and quorums**
+
+**纪元编号与法定人数**
+
+All of the consensus protocols discussed so far internally use a leader in some form oranother, but they don’t guarantee that the leader is unique. Instead, they can make aweaker guarantee: the protocols define an **epoch number**(called the **ballot number** in Paxos, **view number** in Viewstamped Replication, and **term number** in Raft) and guarantee that within each epoch, the leader is unique.
+
+前文讨论的所有共识协议，在内部都会以某种形式引入主节点，但这些协议并不保证主节点的唯一性。相反，它们只能做出一个较弱的保证：协议会定义一个**纪元编号**（在Paxos中被称为**表决编号**，在Viewstamped Replication中被称为**视图编号**，在Raft中被称为**任期编号**），并保证在同一个纪元内，主节点是唯一的。
+
+Every time the current leader is thought to be dead, a vote is started among the nodesto elect a new leader. This election is given an incremented epoch number, and thus **epoch numbers are totally ordered and monotonically increasing**. If there is a conflictbetween two different leaders in two different epochs (perhaps because the previousleader actually wasn’t dead after all), then **the leader with the higher epoch number prevails**.
+
+每当集群认为当前主节点已失效时，节点之间会启动一轮投票，选举新的主节点。这轮选举会被赋予一个递增的纪元编号，因此纪元编号是**全序且单调递增**的。如果两个不同纪元的主节点之间出现冲突（可能是因为前一任主节点实际上并未失效），那么**纪元编号更大的主节点拥有优先权**。
+
+Before a leader is allowed to decide anything, it must first check that there isn’t someother leader with a higher epoch number which might take a conflicting decision.How does a leader know that it hasn’t been ousted by another node? Recall “TheTruth Is Defined by the Majority” on page 300: a node cannot necessarily trust itsown judgment—just because a node thinks that it is the leader, that does not neces‐sarily mean the other nodes accept it as their leader.
+
+主节点在获准做出任何决议之前，必须首先确认不存在纪元编号更大的其他主节点 —— 毕竟这些节点可能会做出与之冲突的决议。那么，主节点如何确认自己没有被其他节点取代呢？回顾本书第 300 页的 **“真理由多数派定义”** 一节：一个节点不能仅凭自身判断下定论 —— 仅仅因为某个节点自认为是主节点，并不代表其他节点也承认它的主节点身份。
+
+Instead, it must collect votes from a quorumof nodes (see “Quorums for reading andwriting” on page 179). For every decision that a leader wants to make, it must sendthe proposed value to the other nodes and wait for a quorum of nodes to respond infavor of the proposal. The quorum typically, but not always, consists of a majority ofnodes [105]. A node votes in favor of a proposal only if it is not aware of any otherleader with a higher epoch.
+
+相反，主节点必须**收集法定人数节点的投票**（参见本书第 179 页的 “读写操作的法定人数机制”）。对于主节点想要做出的每一项决议，它都必须将提议值发送给其他节点，并等待法定人数的节点对该提案投出赞成票。通常（但并非绝对），法定人数由**多数节点**构成 [105]。只有当节点不知道存在纪元编号更大的其他主节点时，才会对该提案投赞成票。
+
+Thus, we have two rounds of voting: once to choose a leader, and a second time tovote on a leader’s proposal. The key insight is that the quorums for those two votesmust overlap: if a vote on a proposal succeeds, at least one of the nodes that voted forit must have also participated in the most recent leader election [105]. Thus, if thevote on a proposal does not reveal any higher-numbered epoch, the current leadercan conclude that no leader election with a higher epoch number has happened, andtherefore be sure that it still holds the leadership. It can then safely decide the pro‐posed value.
+
+由此可见，整个过程包含两轮投票：第一轮用于选举主节点，第二轮用于对主节点提出的提案进行表决。核心要点在于，**这两轮投票的法定人数集合必须存在交集**：如果一项提案的投票获得通过，那么投赞成票的节点中，至少有一个节点同时参与了最近一次的主节点选举 [105]。如此一来，若提案投票未发现任何更高编号的纪元，当前主节点即可断定，尚未出现更高纪元的主节点选举，进而确认自己的主节点身份仍然有效。此时，主节点就可以安全地敲定该提案的决议值。
+
+This voting process looks superficially similar to two-phase commit. The biggest dif‐ferences are that in 2PC the coordinator is not elected, and that fault-tolerant consen‐sus algorithms only require votes from a majority of nodes, whereas 2PC requires a“yes” vote from every participant. Moreover, consensus algorithms define a recoveryprocess by which nodes can get into a consistent state after a new leader is elected,ensuring that the safety properties are always met. These differences are key to thecorrectness and fault tolerance of a consensus algorithm.
+
+这一投票流程表面上与两阶段提交颇为相似。二者最大的区别在于：两阶段提交中的协调者无需选举产生；且容错共识算法仅需获得多数节点的投票即可，而两阶段提交则要求**所有参与者都投赞成票**。此外，共识算法还定义了一套恢复流程，当新主节点当选后，各节点可通过该流程恢复至一致状态，从而确保安全性属性始终得到满足。这些差异，正是共识算法具备正确性与容错能力的关键所在。
+
+**Limitations of consensus**
+
+**共识算法的局限性**
+
+Consensus algorithms are a huge breakthrough for distributed systems: they bringconcrete safety properties (agreement, integrity, and validity) to systems where every‐thing else is uncertain, and they nevertheless remain fault-tolerant (able to make pro‐gress as long as a majority of nodes are working and reachable). They provide totalorder broadcast, and therefore they can also implement linearizable atomic opera‐tions in a fault-tolerant way (see “Implementing linearizable storage using total orderbroadcast” on page 350).
+
+共识算法堪称分布式系统领域的一项重大突破：在一个处处充满不确定性的系统中，它能够提供明确的**安全性属性**（一致性、完整性与有效性），同时还能保持容错能力 —— 只要多数节点处于正常工作且可连通的状态，系统就能持续推进业务流程。共识算法可实现全序广播，因此也能以容错的方式实现**线性化原子操作**（参见本书第 350 页的 “基于全序广播实现线性化存储” 一节）。
+
+Nevertheless, they are not used everywhere, because the benefits come at a cost.
+
+尽管优势显著，共识算法却并未在所有场景中得到应用，这是因为其收益的背后需要付出相应的代价。
+
+The process by which nodes vote on proposals before they are decided is a kind ofsynchronous replication. As discussed in “Synchronous Versus Asynchronous Repli‐cation” on page 153, databases are often configured to use asynchronous replication.In this configuration, some committed data can potentially be lost on failover—butmany people choose to accept this risk for the sake of better performance.
+
+节点在对提案做出决议之前，需要先通过投票达成共识，这一过程本质上属于**同步复制**。正如本书第 153 页 “同步复制与异步复制” 一节所述，数据库通常会被配置为异步复制模式。在这种配置下，发生故障转移时可能会丢失部分已提交的数据 —— 但为了换取更优的性能，许多人选择接受这种风险。
+
+Consensus systems always require a strict majority to operate. This means you need aminimum of three nodes in order to tolerate one failure (the remaining two out ofthree form a majority), or a minimum of five nodes to tolerate two failures (theremaining three out of five form a majority). If a network failure cuts off some nodesfrom the rest, only the majority portion of the network can make progress, and therest is blocked (see also “The Cost of Linearizability” on page 335).
+
+共识系统的运行始终需要**严格多数**的节点支持。这意味着，若要容忍 1 个节点故障，集群至少需要部署 3 个节点（3 个节点中剩余 2 个即可构成多数派）；若要容忍 2 个节点故障，则集群至少需要部署 5 个节点（5 个节点中剩余 3 个即可构成多数派）。一旦发生网络故障，导致部分节点与集群失联，那么只有处于多数派分区的节点能够继续推进业务，其余节点则会陷入阻塞状态（另可参见本书第 335 页的 “线性化的代价” 一节）。
+
+Most consensus algorithms assume a fixed set of nodes that participate in voting,which means that you can’t just add or remove nodes in the cluster. Dynamic mem‐bership extensions to consensus algorithms allow the set of nodes in the cluster tochange over time, but they are much less well understood than static membershipalgorithms.
+
+多数共识算法会假定参与投票的节点集合是固定的，这意味着无法随意向集群中添加或移除节点。针对共识算法的**动态节点成员机制**扩展方案，允许集群的节点集合随时间变化，但这类方案的成熟度远不及静态节点成员机制。
+
+Consensus systems generally rely on timeouts to detect failed nodes. In environmentswith highly variable network delays, especially geographically distributed systems, itoften happens that a node falsely believes the leader to have failed due to a transientnetwork issue. Although this error does not harm the safety properties, frequentleader elections result in terrible performance because the system can end up spend‐ing more time choosing a leader than doing any useful work.
+
+共识系统通常依靠**超时机制**来检测故障节点。在网络延迟波动极大的环境中，尤其是在地理分布式系统里，常常会出现这样的情况：某个节点会因**临时性网络故障**，错误地判定主节点已经失效。虽然这类误判不会损害系统的安全性属性，但过于频繁的主节点选举会导致系统性能急剧下降 —— 因为系统可能会将更多时间耗费在选举主节点上，而非执行实际的业务工作。
+
+Sometimes, consensus algorithms are particularly sensitive to network problems. Forexample, Raft has been shown to have unpleasant edge cases [106]: if the entire net‐work is working correctly except for one particular network link that is consistentlyunreliable, Raft can get into situations where leadership continually bounces betweentwo nodes, or the current leader is continually forced to resign, so the system effec‐tively never makes progress. Other consensus algorithms have similar problems, anddesigning algorithms that are more robust to unreliable networks is still an openresearch problem.
+
+在某些场景下，共识算法对网络问题的敏感度会尤为突出。例如，有研究表明 Raft 算法存在一些棘手的**边界情况**[106]：即便整个网络的大部分链路都正常工作，只要有某一条特定的网络链路持续不稳定，Raft 集群就可能陷入这样的困境 —— 主节点身份在两个节点之间频繁切换，或者现任主节点被迫频繁退位，最终导致系统实际上完全无法推进业务。其他共识算法也存在类似问题，因此，设计对不稳定网络环境鲁棒性更强的共识算法，至今仍是一个开放的研究课题。
+
+#### Membership and Coordination Services
+
+**成员管理与协调服务**
+
+ZooKeeper and etcd are designed to hold small amounts of data that can fit entirely in memory (although they still write to disk for durability)—so you wouldn’t want tostore all of your application’s data here. That small amount of data is replicatedacross all the nodes using a fault-tolerant total order broadcast algorithm. As dis‐cussed previously, total order broadcast is just what you need for database replica‐tion: if each message represents a write to the database, applying the same writes inthe same order keeps replicas consistent with each other.
+
+ZooKeeper 与 etcd 的设计定位是存储**少量可完全载入内存的数据**（尽管为了保证持久性，它们仍会将数据写入磁盘）—— 因此，你不会希望将应用的全部数据都存储在这里。这些少量数据会通过**容错全序广播算法**在所有节点间实现复制。正如前文所述，全序广播恰好满足数据库复制的需求：如果每条消息都代表一次数据库写操作，那么所有节点按相同顺序执行这些写操作，就能保证各副本之间的数据一致性。
+
+ZooKeeper is modeled after Google’s Chubby lock service [14, 98], implementing notonly total order broadcast (and hence consensus), but also an interesting set of otherfeatures that turn out to be particularly useful when building distributed systems:
+
+ZooKeeper 的设计借鉴了谷歌的 Chubby 锁服务 [14, 98]，它不仅实现了全序广播（进而实现了共识机制），还提供了一系列其他实用特性，这些特性在构建分布式系统的过程中被证明价值极高：
+
+**Linearizable atomic operations** Using an atomic compare-and-set operation, you can implement a lock: if several nodes concurrently try to perform the same operation, only one of them will suc‐ ceed. The consensus protocol guarantees that the operation will be atomic and linearizable, even if a node fails or the network is interrupted at any point. A dis‐ tributed lock is usually implemented as a lease, which has an expiry time so that it is eventually released in case the client fails (see “Process Pauses” on page 295).
+
+**线性化原子操作** 借助原子比较并设置（CAS）操作，你可以实现分布式锁：当多个节点并发执行同一操作时，仅有一个节点能够成功。共识协议可以保证，即便操作过程中发生节点故障或网络中断，该操作依然具备原子性与线性化特性。分布式锁通常会以**租约**的形式实现，并设置过期时间 —— 这样一来，即便客户端发生故障，锁最终也会被自动释放（参见本书第 295 页的 “进程暂停” 一节）。
+
+**Total ordering of operations** As discussed in “The leader and the lock” on page 301, when some resource is protected by a lock or lease, you need a fencing token to prevent clients from con‐ flicting with each other in the case of a process pause. The fencing token is some number that monotonically increases every time the lock is acquired. ZooKeeper provides this by totally ordering all operations and giving each operation a **monotonically increasing transaction ID (zxid)** and **version number (cversion)** [15].
+
+**操作全序性** 正如本书第 301 页 “主节点与锁” 一节所述，当某一资源被锁或租约保护时，需要引入**围栏令牌**来避免进程暂停场景下的客户端冲突问题。围栏令牌是一个递增数值，每一次获取锁操作都会生成一个比之前更大的令牌。ZooKeeper 通过对所有操作进行全序排序来实现这一机制，它会为每一项操作分配一个**单调递增的事务 ID（zxid）** 与**版本号（cversion）**[15]。
+
+**Failure detection** Clients maintain a **long-lived session** on ZooKeeper servers, and the client and server periodically exchange heartbeats to check that the other node is still alive. Even if the connection is temporarily interrupted, or a ZooKeeper node fails, the session remains active. However, if the heartbeats cease for a duration that is longer than the session timeout, ZooKeeper declares the session to be dead. Any locks held by a session can be configured to be automatically released when the **session times out** (ZooKeeper calls these **ephemeral nodes**).
+
+**故障检测** 客户端会与 ZooKeeper 服务器建立**长连接会话**，客户端与服务器之间会定期交换心跳包，以确认对方是否处于存活状态。即便连接发生临时中断，或是某一 ZooKeeper 节点发生故障，会话依然会保持有效。但如果心跳包的中断时长超过会话超时阈值，ZooKeeper 就会判定该会话已失效。会话持有的所有锁都可以被配置为**会话超时时自动释放**（ZooKeeper 将这类锁对应的节点称为**临时节点**）。
+
+**Change notifications** Not only can one client read locks and values that were created by another client,but it can also watch them for changes. Thus, a client can find out when another client joins the cluster (based on the value it writes to ZooKeeper), or if another client fails (because its session times out and its ephemeral nodes disappear). By subscribing to notifications, a client avoids having to frequently poll to find out about changes.
+
+**变更通知** 客户端不仅可以读取其他客户端创建的锁与数据，还能为这些数据注册**变更监听**。这样一来，当有新客户端加入集群时（可通过其写入 ZooKeeper 的数据判断），或是某一客户端发生故障时（因会话超时导致临时节点消失），监听客户端都能及时感知。通过订阅变更通知，客户端无需通过频繁轮询来获取数据变化。
+
+Of these features, only the linearizable atomic operations really require consensus. However, it is the combination of these features that makes systems like ZooKeeperso useful for distributed coordination.
+
+在上述特性中，只有**线性化原子操作**真正依赖共识机制实现。但正是这些特性的组合，才让 ZooKeeper 这类系统在分布式协调场景中具备了不可替代的价值。
+
+### Summary
+
+We saw that achieving **consensus** means deciding something in such a way that allnodes agree on what was decided, and such that the decision is irrevocable. Withsome digging, it turns out that a wide range of problems are actually reducible toconsensus and are equivalent to each other (in the sense that if you have a solutionfor one of them, you can easily transform it into a solution for one of the others).Such equivalent problems include:
+
+- **Linearizable compare-and-set registers** The register needs to atomically decide whether to set its value, based on whether its current value equals the parameter given in the operation.
+
+- **Atomic transaction commit** A database must decide whether to commit or abort a distributed transaction.
+
+- **Total order broadcas**t The messaging system must decide on the order in which to deliver messages.
+
+- **Locks and leases** When several clients are racing to grab a lock or lease, the lock decides which one successfully acquired it.
+
+- **Membership/coordination service** Given a failure detector (e.g., timeouts), the system must decide which nodes are alive, and which should be considered dead because their sessions timed out.
+
+- **Uniqueness constraint** When several transactions concurrently try to create conflicting records with the same key, the constraint must decide which one to allow and which should fail with a constraint violation.
+
+我们已经明确，**达成共识**的内涵是：以一种能让所有节点对决议结果形成一致认可的方式做出决策，且该决策一旦确定便不可撤销。深入探究后不难发现，分布式领域内的诸多问题，实际上都可归结为共识问题，且这些问题彼此等价 —— 也就是说，只要能解决其中一个问题，就能轻松将解决方案转化为其他问题的解决思路。这类等价问题包括：
+
+1. **线性化比较并设置寄存器**：寄存器需要基于自身当前值是否与操作传入的参数值相等，来原子性地决定是否更新其值。
+2. **原子事务提交**：数据库必须决定是提交还是中止一个分布式事务。
+3. **全序广播**：消息系统必须决定消息的投递顺序。
+4. **锁与租约**：当多个客户端竞争获取同一把锁或租约时，由锁来决定哪一个客户端能够成功获取。
+5. **成员管理 / 协调服务**：基于故障检测器（如超时机制），系统必须判定哪些节点处于存活状态，哪些节点因会话超时应被标记为失效。
+6. **唯一性约束**：当多个事务并发尝试创建具有相同主键的冲突记录时，由约束机制决定允许其中哪一个事务执行，哪一个事务因违反约束而失败。
+
+All of these are straightforward if you only have a single node, or if you are willing toassign the decision-making capability to a single node. This is what happens in asingle-leader database: all the power to make decisions is vested in the leader, whichis why such databases are able to provide linearizable operations, uniqueness con‐straints, a totally ordered replication log, and more.
+
+如果系统只有单个节点，或者你愿意将决策能力完全赋予单个节点，那么解决上述所有问题都会变得十分简单。单主数据库正是采用了这种模式：所有决策权限都集中在主节点手中，这也是此类数据库能够提供线性化操作、唯一性约束、全序复制日志等功能的原因所在。
+
+However, if that single leader fails, or if a network interruption makes the leaderunreachable, such a system becomes unable to make any progress. There are threeways of handling that situation:
+
+1. Wait for the leader to recover, and accept that the system will be blocked in the meantime. Many XA/JTA transaction coordinators choose this option. This approach does not fully solve consensus because it does not satisfy the termina‐ tion property: if the leader does not recover, the system can be blocked forever.
+2. Manually fail over by getting humans to choose a new leader node and reconfig‐ ure the system to use it. Many relational databases take this approach. It is a kind of consensus by “act of God”—the human operator, outside of the computer sys‐ tem, makes the decision. The speed of failover is limited by the speed at which humans can act, which is generally slower than computers.
+3. Use an algorithm to automatically choose a new leader. This approach requires a consensus algorithm, and it is advisable to use a proven algorithm that correctly handles adverse network conditions [107].
+
+然而，一旦这个唯一的主节点发生故障，或是网络中断导致主节点无法被访问，这类系统就会陷入无法推进业务的停滞状态。针对这种情况，有三种应对方案：
+
+1. **等待主节点恢复**，同时接受系统在此期间处于阻塞状态的现实。许多 XA/JTA 事务协调器都会选择这种方案。但该方案并未彻底解决共识问题，因为它不满足共识的**终止性**要求 —— 如果主节点永远无法恢复，系统就会被永久阻塞。
+2. **手动执行故障转移**，由运维人员选定一个新的主节点，并重新配置系统使其成为新的主节点。许多关系型数据库采用的就是这种方案。这相当于一种**人为干预式共识**—— 决策由计算机系统之外的运维人员做出。故障转移的速度受制于人工操作的效率，通常要慢于计算机自动处理的速度。
+3. **使用算法自动选举新主节点**。这种方案需要依赖共识算法，且建议选用**经过实践验证的算法**，以确保其能正确应对各类恶劣网络状况 [107]。
 
