@@ -52,8 +52,11 @@
 - [a tour of go](https://github.com/Uyouii/Reading/blob/master/go/a%20tour%20of%20go.md)
 - [effective go](https://github.com/Uyouii/Reading/blob/master/go/effective%20go.md)
 ## **[<font color=#008000>linux</font>](https://github.com/Uyouii/Reading/blob/master/linux)**
-### **[<font color=#008000>Linux内核深度解析</font>](https://github.com/Uyouii/Reading/blob/master/linux/Linux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90)**
-- [第3章 内存管理](https://github.com/Uyouii/Reading/blob/master/linux/Linux%E5%86%85%E6%A0%B8%E6%B7%B1%E5%BA%A6%E8%A7%A3%E6%9E%90/%E7%AC%AC3%E7%AB%A0%20%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86.md)
+### **[<font color=#008000>Linux Kernel Development (3rd Edition)</font>](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29)**
+- [01 Introduction to the Linux Kernel](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/01%20Introduction%20to%20the%20Linux%20Kernel.md)
+- [02 Getting Started with the Kernel](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/02%20Getting%20Started%20with%20the%20Kernel.md)
+- [03 Process Management](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/03%20Process%20Management.md)
+- [04 Process Scheduling](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/04%20Process%20Scheduling.md)
 - [Linux内核虚拟地址空间](https://github.com/Uyouii/Reading/blob/master/linux/Linux%E5%86%85%E6%A0%B8%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4.md)
 ### **[<font color=#008000>Linux环境编程：从应用到内核</font>](https://github.com/Uyouii/Reading/blob/master/linux/Linux%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%EF%BC%9A%E4%BB%8E%E5%BA%94%E7%94%A8%E5%88%B0%E5%86%85%E6%A0%B8)**
 - [0 基础知识](https://github.com/Uyouii/Reading/blob/master/linux/Linux%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%EF%BC%9A%E4%BB%8E%E5%BA%94%E7%94%A8%E5%88%B0%E5%86%85%E6%A0%B8/0%20%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86.md)

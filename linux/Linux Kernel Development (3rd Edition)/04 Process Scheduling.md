@@ -1,0 +1,25 @@
+[toc]
+
+## 4 Process Scheduling
+
+The process scheduler decides which process runs, when, and for howlong.The process scheduler (or simply the scheduler, to which it is often shortened)divides the finite resource of processor time between the runnable processeson a system.The scheduler is the basis of a multitasking operating systemsuch as Linux. By deciding which process runs next, the scheduler isresponsible for best utilizing the system and giving users the impression thatmultiple processes are executing simultaneously.
+
+进程调度器负责决定**哪个进程运行、何时运行以及运行多长时间**。进程调度器（通常简称为**调度器**）会在系统的可运行进程之间，分配有限的处理器时间资源。调度器是 Linux 这类**多任务操作系统**的核心基础。通过决策下一个待运行的进程，调度器能够最大限度地利用系统资源，并且让用户产生**多个进程在同时执行**的错觉。
+
+The idea behind the scheduler is simple.To best utilize processor time,assuming there are runnable processes, a process should always be running.If there are more runnable processes than processors in a system, someprocesses will not be running at a given moment.These processes arewaiting to run. Deciding which process runs next, given a set of runnableprocesses, is the fundamental decision that the scheduler must make.
+
+进程调度器的设计理念十分简单：在存在可运行进程的前提下，应当保证**始终有进程处于运行状态**。如果系统中可运行进程的数量多于处理器的数量，那么在某个时刻，部分进程会无法获得运行机会，进入**等待运行**的状态。在给定一组可运行进程的情况下，决定下一个运行的进程，是进程调度器必须做出的核心决策。
+
+### Multitasking
+
+A multitasking operating system is one that can simultaneouslyinterleave execution of more than one process. On single processormachines, this gives the illusion of multiple processes running concurrently.On multiprocessor machines, such functionality enables processes toactually run concurrently, in parallel, on different processors. On either typeof machine, it also enables many processes to block or sleep, not actuallyexecuting until work is available.These processes, although in memory, are          not runnable. Instead, such processes utilize the kernel to wait until someevent (keyboard input, network data, pas-sage of time, and so on) occurs.Consequently, a modern Linux system can have many processes in memorybut, say, only one in a runnable state.
+
+多任务操作系统指的是能够**同时交错执行多个进程**的操作系统。在单处理器设备中，这种机制会营造出**多个进程并发运行**的错觉；在多处理器设备中，该功能则能让进程真正在不同处理器上并行执行。无论在哪种设备上，多任务机制还支持大量进程进入阻塞或睡眠状态 —— 这些进程不会实际执行，而是等待任务就绪后再运行。这类进程虽然驻留在内存中，但**并非处于可运行状态**，而是通过内核等待特定事件的触发（例如键盘输入、网络数据到达、定时时间结束等）。因此，一个现代 Linux 系统的内存中可能存在大量进程，但某一时刻可能只有一个进程处于可运行状态。
+
+Multitasking operating systems come in two flavors: cooperative multitasking and preemptive multitasking. Linux, like all Unix variants and most modernoperating systems, implements preemptive multitasking. In preemptivemultitasking, the scheduler decides when a process is to cease running anda new process is to begin running.The act of involuntarily suspending a running process is called **preemption**. The time aprocess runs before it is preempted is usually predetermined, and it is called the **timeslice** of the process. The timeslice, in effect, gives each runnableprocess a slice of the processor’s time. Manag-ing the timeslice enables thescheduler to make global scheduling decisions for the sys-tem. It alsoprevents any one process from monopolizing the processor. On manymodern operating systems, the timeslice is dynamically calculated as afunction of process behavior and configurable system policy.As we shall see,Linux’s unique “fair” scheduler does not employ timeslices per se, tointeresting effect.
+
+多任务操作系统分为两种类型：**协作式多任务**与**抢占式多任务**。Linux 与所有 Unix 衍生系统及大多数现代操作系统一样，采用的是抢占式多任务机制。在抢占式多任务模式下，由调度器决定进程何时停止运行、新进程何时开始运行。这种**强制暂停正在运行的进程**的操作被称为**抢占**。进程在被抢占前的持续运行时间通常是预先设定好的，这段时间被称为进程的**时间片**。实际上，时间片就是为每个可运行进程分配的一段处理器时间。通过管理时间片，调度器能够对系统全局的调度策略做出决策，同时也能避免单个进程独占处理器资源。在许多现代操作系统中，时间片的长度会根据进程的行为特征和可配置的系统策略动态计算。我们后续会讲到，Linux 独特的 “公平调度器” 并没有严格采用传统意义上的时间片机制，这一设计带来了十分有趣的调度效果。
+
+Conversely, in cooperative multitasking, a process does not stop runninguntil it voluntary decides to do so.The act of a process voluntarilysuspending itself is called yielding. Ideally, processes yield often, giving eachrunnable process a decent chunk of the processor, but the operating system            cannot enforce this.The shortcomings of this approach are manifest: Thescheduler cannot make global decisions regarding how long processes run;processes can monopolize the processor for longer than the user desires;and a hung process that never yields can potentially bring down the entiresystem.Thankfully, most operating sys-tems designed in the last twodecades employ preemptive multitasking, with Mac OS 9 (and earlier) andWindows 3.1 (and earlier) being the most notable (and embarrassing)exceptions. Of course, Unix has sported preemptive multitasking since itsinception.
+
+与之相对，在协作式多任务模式下，进程**只有在主动选择暂停时才会停止运行**。进程主动暂停自身的操作被称为**主动让出**。理想情况下，进程会频繁主动让出处理器资源，确保每个可运行进程都能获得足够的处理器时间，但操作系统无法强制进程这么做。这种模式的缺陷十分明显：调度器无法对进程的运行时长做出全局决策；进程可能会超出用户预期的时长占用处理器；而一个陷入死循环、从不主动让出资源的进程，甚至可能导致整个系统崩溃。幸好，过去二十年间设计的大多数操作系统都采用了抢占式多任务机制，只有 Mac OS 9（及更早版本）和 Windows 3.1（及更早版本）是最典型（也最受诟病）的例外。当然，Unix 从诞生之初就已经支持抢占式多任务机制。
