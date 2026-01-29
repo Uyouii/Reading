@@ -16,7 +16,7 @@ A multitasking operating system is one that can simultaneouslyinterleave executi
 
 多任务操作系统指的是能够**同时交错执行多个进程**的操作系统。在单处理器设备中，这种机制会营造出**多个进程并发运行**的错觉；在多处理器设备中，该功能则能让进程真正在不同处理器上并行执行。无论在哪种设备上，多任务机制还支持大量进程进入阻塞或睡眠状态 —— 这些进程不会实际执行，而是等待任务就绪后再运行。这类进程虽然驻留在内存中，但**并非处于可运行状态**，而是通过内核等待特定事件的触发（例如键盘输入、网络数据到达、定时时间结束等）。因此，一个现代 Linux 系统的内存中可能存在大量进程，但某一时刻可能只有一个进程处于可运行状态。
 
-Multitasking operating systems come in two flavors: cooperative multitasking and preemptive multitasking. Linux, like all Unix variants and most modernoperating systems, implements preemptive multitasking. In preemptivemultitasking, the scheduler decides when a process is to cease running anda new process is to begin running.The act of involuntarily suspending a running process is called **preemption**. The time aprocess runs before it is preempted is usually predetermined, and it is called the **timeslice** of the process. The timeslice, in effect, gives each runnableprocess a slice of the processor’s time. Manag-ing the timeslice enables thescheduler to make global scheduling decisions for the sys-tem. It alsoprevents any one process from monopolizing the processor. On manymodern operating systems, the timeslice is dynamically calculated as afunction of process behavior and configurable system policy.As we shall see,Linux’s unique “fair” scheduler does not employ timeslices per se, tointeresting effect.
+Multitasking operating systems come in two flavors: **cooperative multitasking** and **preemptive multitasking**. Linux, like all Unix variants and most modernoperating systems, implements preemptive multitasking. In preemptivemultitasking, the scheduler decides when a process is to cease running anda new process is to begin running.The act of involuntarily suspending a running process is called **preemption**. The time aprocess runs before it is preempted is usually predetermined, and it is called the **timeslice** of the process. The timeslice, in effect, gives each runnableprocess a slice of the processor’s time. Manag-ing the timeslice enables thescheduler to make global scheduling decisions for the sys-tem. It alsoprevents any one process from monopolizing the processor. On manymodern operating systems, the timeslice is dynamically calculated as afunction of process behavior and configurable system policy.As we shall see,Linux’s unique “fair” scheduler does not employ timeslices per se, tointeresting effect.
 
 多任务操作系统分为两种类型：**协作式多任务**与**抢占式多任务**。Linux 与所有 Unix 衍生系统及大多数现代操作系统一样，采用的是抢占式多任务机制。在抢占式多任务模式下，由调度器决定进程何时停止运行、新进程何时开始运行。这种**强制暂停正在运行的进程**的操作被称为**抢占**。进程在被抢占前的持续运行时间通常是预先设定好的，这段时间被称为进程的**时间片**。实际上，时间片就是为每个可运行进程分配的一段处理器时间。通过管理时间片，调度器能够对系统全局的调度策略做出决策，同时也能避免单个进程独占处理器资源。在许多现代操作系统中，时间片的长度会根据进程的行为特征和可配置的系统策略动态计算。我们后续会讲到，Linux 独特的 “公平调度器” 并没有严格采用传统意义上的时间片机制，这一设计带来了十分有趣的调度效果。
 
@@ -725,3 +725,130 @@ Waking is handled via wake_up(), which wakes up all the taskswaiting on the give
 关于进程睡眠，有一个重要的注意点：**存在虚假唤醒的情况**。进程被唤醒，并不代表它所等待的事件已经发生 —— 因此，处理睡眠逻辑时，**必须始终使用循环结构**，在每次唤醒后重新检查等待条件，确保目标事件确实已经发生后，再退出睡眠流程。图 4.1 描绘了各个调度状态之间的关联关系。
 
 ![Figure4.1](../../images/linux/LKD4.1.jpg)
+
+### Preemption and Context Switching
+
+**抢占与上下文切换**
+
+Context switching, the switching fromone runnable task to another, is handled by thecontext_switch()functiondefined in kernel/sched.c. It is called by schedule()when a new process hasbeen selected to run. It does two basic jobs:
+
+- Calls switch_mm(), which is declared in <asm/mmu_context.h>, to switchthe virtual memory mapping from the previous process’s to that of the newprocess.
+-  Calls switch_to(), declared in <asm/system.h>, to switch the processorstate from the previous process’s to the current’s.This involves saving and restoring stack information and the processor registers and any other architecture-       specific state that must be managed and restored on a per-process basis.
+
+**上下文切换**（即从一个可运行任务切换到另一个可运行任务）由定义在`kernel/sched.c`中的`context_switch()`函数负责处理。当`schedule()`函数选中了一个新的进程准备运行时，就会调用`context_switch()`。该函数主要完成两项核心工作：
+
+1. 调用`switch_mm()`函数（声明于头文件`<asm/mmu_context.h>`），将**虚拟内存映射**从**前一个进程**（当前正在运行的进程）切换到新进程。
+2. 调用`switch_to()`函数（声明于头文件`<asm/system.h>`），将**处理器状态**从前一个进程切换到新进程。这一步涉及保存和恢复进程的栈信息、处理器寄存器，以及其他所有需要**按进程单独管理和恢复**的架构相关状态（不同 CPU 架构的实现细节存在差异）。
+
+The kernel, however, must know when to call schedule(). If it calledschedule() only when code explicitly did so, user-space programs could runindefinitely. Instead, the kernel provides the need_resched flag to signifywhether a reschedule should be performed (see Table 4.1).This flag is set byscheduler_tick() when a process should be preempted, and bytry_to_wake_up() when a process that has a higher priority than the currentlyrun-ning process is awakened.The kernel checks the flag, sees that it is set,and calls schedule() to switch to a new process.The flag is a message to thekernel that the scheduler should be invoked as soon as possible becauseanother process deserves to run.
+
+然而，内核必须明确**何时调用`schedule()`函数**。如果仅在代码显式调用`schedule()`时才触发调度，用户空间程序可能会无限期占用 CPU 运行。为解决这一问题，内核提供了`need_resched`标志，用于标识当前是否需要执行重新调度（详见表 4.1）。
+
+这个标志会在两种场景下被置位：
+
+- 当某个进程应当被抢占时，`scheduler_tick()`（调度器时钟中断函数）会设置该标志；
+- 当被唤醒进程的优先级高于当前正在运行的进程时，`try_to_wake_up()`函数会设置该标志。
+
+内核会检查`need_resched`标志，若发现它已被置位，就会调用`schedule()`函数切换到新进程。这个标志本质上是给内核的一个通知：**应尽快调用调度器**，因为有另一个进程更值得获取 CPU 运行资源。
+
+| Function                 | Purpose                                                      |
+| ------------------------ | ------------------------------------------------------------ |
+| set_tsk_need_resched()   | Set the need_resched flag in the given process.              |
+| clear_tsk_need_resched() | Clear the need_resched flag in the given process.            |
+| need_resched()           | Test the value of the need_resched flag: return true if set and false otherwise |
+
+Upon returning to user-space or returning from an interrupt, theneed_resched flag is checked. If it is set, the kernel invokes the schedulerbefore continuing.
+
+当内核返回到用户空间，或从中断处理程序返回时，会检查`need_resched`标志位；若该标志位已被置位，内核会先调用调度器，再继续执行后续操作。
+
+The flag is per-process, and not simply global, because it is faster to accessa value in the process descriptor (because of the speed of current and high probabilityof it being cache hot) than a global variable. Historically, the flag was globalbefore the 2.2 kernel. In 2.2 and 2.4, the flag was an int inside thetask_struct. In 2.6, it was moved into a sin-gle bit of a special flag variable inside the thread_info structure.
+
+该标志位为**每个进程独立持有**，并非简单的全局变量 —— 这是因为访问进程描述符中的值，要比访问全局变量更快（一方面得益于`current`指针的快速访问特性，另一方面进程描述符的数据也有极高概率**处于 CPU 高速缓存中**，即缓存命中）。从历史实现来看，2.2 版本内核之前，该标志位是全局的；在 2.2 和 2.4 版本内核中，它被定义为`task_struct`结构体中的一个整型变量；而到了 2.6 版本内核，它被移至`thread_info`结构体中，占用一个专用标志变量的**某一单独比特位**（节省内存空间）。
+
+#### User Preemption
+
+User preemption occurs when the kernel is about to return to user-space, need_reschedis set, and therefore, the scheduler is invoked. If the kernel is returning to user-space, it knows it is in a safe quiescent state. In other words, if it is safe to continue executingthe current task, it is also safe to pick a new task to execute. Consequently, wheneverthe ker-nel is preparing to return to user-space either on return from an interrupt orafter a sys-tem call, the value of need_resched is checked. If it is set, the scheduler isinvoked to select a new (more fit) process to execute. Both the return paths for returnfrom interrupt and return from system call are architecture-dependent and typicallyimplemented in assembly in entry.S (which, aside from kernel entry code, also containskernel exit code).
+
+当内核即将返回到用户空间，且`need_resched`标志位已被置位时，就会触发**用户态抢占**，调度器也会随之被调用。内核在准备返回到用户空间时，能确定自身正处于**安全的静止状态**；换言之，若此时继续执行当前任务是安全的，那么挑选一个新任务来执行同样是安全的。
+
+因此，无论内核是从中断处理程序返回，还是从系统调用返回，只要准备返回到用户空间，就会检查`need_resched`标志位的状态。若标志位已置位，调度器会被立即调用，以选择一个**更合适的进程**执行。需要注意的是，从中断返回和从系统调用返回的处理流程，均为**架构相关的实现**，这类代码通常以汇编语言编写在`entry.S`文件中（该文件除了包含内核的入口处理代码，也封装了内核的退出处理逻辑）。
+
+In short, user preemption can occur
+
+- When returning to user-space from a system call 
+- When returning to user-space from an interrupt handler
+
+简言之，**用户态抢占**会在以下两种场景触发：
+
+1. 内核从系统调用执行完毕，准备返回到用户空间时；
+2. 内核从中断处理程序执行完毕，准备返回到用户空间时。
+
+#### Kernel Preemption
+
+The Linux kernel, unlike most other Unix variants and many otheroperating systems, is a fully preemptive kernel. In nonpreemptive kernels, kernel coderuns until completion. That is, the scheduler cannot reschedule a task while it is in thekernel—kernel code is scheduled cooperatively, not preemptively. Kernel code runs untilit finishes (returns to user-space) or explicitly blocks. In the 2.6 kernel, however, theLinux kernel became pre-emptive: It is now possible to preempt a task at any point, solong as the kernel is in a state in which it is safe to reschedule.
+
+与大多数其他 Unix 变体及诸多操作系统不同，Linux 内核是一个**完全抢占式内核**。而在非抢占式内核中，内核代码一旦开始执行，就会运行至结束 —— 也就是说，当任务处于内核态运行时，调度器无法对其进行重新调度，内核代码采用的是**协作式调度**而非抢占式调度。内核代码会一直运行，直到执行完毕（返回到用户空间）或显式进入阻塞状态为止。而从 2.6 版本内核开始，Linux 实现了内核态抢占：如今，只要内核处于**可安全重新调度的状态**，就可以在任意时刻抢占当前处于内核态运行的任务。
+
+So when is it safe to reschedule? The kernel can preempt a task running in the kernel solong as it does not hold a lock.That is, locks are used as markers of regions of nonpre-emptibility. Because the kernel is SMP-safe, if a lock is not held, the current code isreen-trant and capable of being preempted.
+
+那么，何时才是可安全重新调度的时机呢？答案是：**只要当前任务没有持有任何锁，内核就可以抢占该内核态任务**。换句话说，锁被用作**不可抢占区域**的标记。由于 Linux 内核是**对称多处理（SMP）安全**的，因此如果任务没有持有锁，说明当前执行的代码是可重入的，具备被抢占的条件。
+
+The first change in supporting kernel preemption was the addition of a **preemption counter, preempt_count**, to each process’s thread_info.This counter begins at zero andincrements once for each lock that is acquired and decrements once for each lock thatis released.When the counter is zero, the kernel is preemptible. Upon return frominterrupt, if returning to kernel-space, the kernel checks the values of need_resched andpreempt_count. If need_resched is set and preempt_count is zero, then a more impor-tant task is runnable, and it is safe to preempt.Thus, the scheduler is invoked. Ifpreempt_count is nonzero, a lock is held, and it is unsafe to reschedule. In that case, theinterrupt returns as usual to the currently executing task.When all the locks that thecur-rent task is holding are released, preempt_count returns to zero.At that time, theunlock code checks whether need_resched is set. If so, the scheduler is invoked.Enabling and disabling kernel preemption is sometimes required in kernel code and isdiscussed in Chapter 9.
+
+支撑内核态抢占的第一个核心改动，是在每个进程的`thread_info`结构体中新增了一个**抢占计数器（`preempt_count`）**。该计数器的初始值为 0：每获取一把锁，计数器值就加 1；每释放一把锁，计数器值就减 1。当计数器值为 0 时，内核处于可抢占状态。
+
+当中断处理完毕返回时，若要回到内核态继续运行，内核会同时检查`need_resched`和`preempt_count`两个值：
+
+1. 若`need_resched`已置位，且`preempt_count`为 0，说明存在优先级更高的可运行任务，且当前内核处于安全可抢占状态，此时会调用调度器进行进程切换；
+2. 若`preempt_count`不为 0，说明当前任务持有锁，此时重新调度是不安全的，中断会按照常规流程返回，继续执行当前正在运行的任务。
+
+当当前任务持有的所有锁都被释放后，`preempt_count`会回归到 0。此时，解锁代码会检查`need_resched`是否已置位，若已置位，则调用调度器进行重新调度。
+
+内核代码中有时会需要手动启用或禁用内核态抢占，相关内容将在第 9 章展开讨论。
+
+Kernel preemption can also occur explicitly, when a task in the kernel blocks or because no additional logic is required to ensure that the kernel is in a state that is safe to preempt. It is assumed that the code that explicitly calls schedule() knows it is safe toreschedule.
+
+内核态抢占也可**显式触发**：一种情况是内核态的任务进入阻塞状态，另一种情况是内核已处于可安全抢占的状态，无需额外执行校验逻辑即可触发。内核会默认，显式调用`schedule()`函数的代码，本身已确认当前处于可安全重新调度的状态。
+
+Kernel preemption can occur
+
+- When an interrupt handler exits, before returning to kernel-space
+- When kernel code becomes preemptible again
+- If a task in the kernel explicitly calls schedule()
+- If a task in the kernel blocks (which results in a call to schedule())
+
+内核态抢占会在以下场景触发：
+
+1. 中断处理程序执行完毕，即将返回到内核态时
+2. 内核代码重新恢复为可抢占状态时
+3. 内核态的任务显式调用`schedule()`函数时
+4. 内核态的任务进入阻塞状态时（该操作会触发`schedule()`函数的调用）
+
+### Real-Time Scheduling Policies
+
+Linux provides two real-time scheduling policies,SCHED_FIFO and SCHED_RR.The nor-mal, not real-time scheduling policy isSCHED_NORMAL.Via the scheduling classes framework, these real-time policies are   managed not by the Completely Fair Scheduler, but by a spe-cial real-time scheduler,defined in kernel/sched_rt.c.The rest of this section discusses the real-time schedulingpolicies and algorithm.
+
+Linux 提供了两种实时调度策略：**SCHED_FIFO（先进先出实时调度）** 和**SCHED_RR（时间片轮转实时调度）**；而常规的非实时调度策略为**SCHED_NORMAL（普通公平调度）**。借助调度类框架，这些实时调度策略**并非由完全公平调度器（CFS）** 管理，而是由一个专用的实时调度器负责，该调度器定义在内核文件`kernel/sched_rt.c`中。本节后续内容将详细讲解这些实时调度策略及其实现算法。
+
+SCHED_FIFO implements a simple first-in, first-out scheduling algorithm without timeslices.A runnable SCHED_FIFO task is always scheduled over any SCHED_NORMALtasks. When a SCHED_FIFO task becomes runnable, it continues to run until it blocks orexplic-itly yields the processor; it has no timeslice and can run indefinitely. Only ahigher prior-ity SCHED_FIFO or SCHED_RR task can preempt a SCHED_FIFO task.Twoor moreSCHED_FIFO tasks at the same priority run round-robin, but again only yieldingthe processor when they explicitly choose to do so. If a SCHED_FIFO task is runnable,all tasks at a lower priority cannot run until it becomes unrunnable.
+
+SCHED_FIFO 实现了**无时间片的简单先进先出调度算法**。处于可运行状态的 SCHED_FIFO 任务，调度优先级始终高于所有 SCHED_NORMAL 任务。当一个 SCHED_FIFO 任务变为可运行状态后，会持续运行直至自身进入阻塞状态，或**显式让出处理器**；它没有时间片限制，理论上可无限期占用 CPU。只有优先级更高的 SCHED_FIFO 或 SCHED_RR 任务，才能抢占当前运行的 SCHED_FIFO 任务。**多个同优先级的 SCHED_FIFO 任务**会采用轮转方式调度，但同样只有当任务主动显式让出处理器时，才会切换到下一个同优先级任务。若某一 SCHED_FIFO 任务处于可运行状态，所有更低优先级的任务都无法被调度，直到该任务退出可运行状态。
+
+SCHED_RR is identical to SCHED_FIFO except that each process can run only until it exhausts a predetermined timeslice.That is, SCHED_RR is SCHED_FIFO with timeslices—it is a real-time, round-robin scheduling algorithm.When a SCHED_RR task exhaustsits times-lice, any other real-time processes at its priority are scheduled round-robin.The timeslice is used to allow only rescheduling of same-priority processes.Aswith SCHED_FIFO, a higher-priority process always immediately preempts a lower-priority one, and a lower-priority process can never preempt a SCHED_RR task, even ifits timeslice is exhausted.
+
+SCHED_RR 与 SCHED_FIFO 的逻辑基本一致，唯一区别是：**每个 SCHED_RR 任务的运行时间会被限制在预设的时间片内**。换言之，SCHED_RR 就是**带时间片的 SCHED_FIFO**，是一种实时的时间片轮转调度算法。当一个 SCHED_RR 任务耗尽自身时间片后，内核会对所有同优先级的其他实时进程执行轮转调度。这一时间片的设计，仅用于实现**同优先级实时进程间的重新调度**。与 SCHED_FIFO 一致，高优先级的实时进程始终能立即抢占低优先级进程；而低优先级进程即便在高优先级 SCHED_RR 任务耗尽时间片后，也无法抢占其 CPU 资源。
+
+Both real-time scheduling policies implement static priorities.The kernel does not cal-culate dynamic priority values for real-time tasks.This ensures that a real-time processat a given priority always preempts a process at a lower priority.
+
+上述两种实时调度策略均采用**静态优先级机制**。内核不会为实时任务计算动态优先级，这一设计确保了**指定优先级的实时进程，总能抢占所有更低优先级的进程**，保证了实时任务的调度确定性。
+
+The real-time scheduling policies in Linux provide soft real-time behavior. Soft real-time refers to the notion that the kernel tries to schedule applications within timing deadlines, but the kernel does not promise to always achieve these goals. Conversely,hard real-time systems are guaranteed to meet any scheduling requirements within certain lim-its. Linux makes no guarantees on the capability to schedule real-time tasks. Despite not having a design that guarantees hard real-time behavior, the real-time scheduling per-formance in Linux is quite good.The 2.6 Linux kernel is capable of meeting stringent timing requirements.
+
+Linux 中的实时调度策略实现的是**软实时**特性。软实时指的是这样一种设计理念：内核会尽力在指定的时序时限内调度实时应用程序，但**不承诺总能达成这一调度目标**。与之相对的是硬实时系统，这类系统能**保证在既定限制内满足所有调度需求**。Linux 并未对实时任务的调度能力做出硬性保证，尽管其设计并非为了实现硬实时特性，但 Linux 的实时调度性能表现依然出色 ——2.6 版本的 Linux 内核已能满足各类**严苛的时序调度要求**。
+
+Real-time priorities range inclusively from zero to MAX_RT_PRIO minus 1. By default, MAX_RT_PRIO is 100—therefore, the default real-time priority range is zero to 99.Thispriority space is shared with the nice values of SCHED_NORMAL tasks:They use thespace from MAX_RT_PRIO to (MAX_RT_PRIO + 40). By default, this means the –20 to+19 nice range maps directly onto the priority space from 100 to 139.
+
+**实时优先级的取值范围**是从 **0 到 MAX_RT_PRIO−1（含）**。默认情况下，**MAX_RT_PRIO 为 100**，因此默认的实时优先级范围是 **0～99**。这个优先级空间与 **SCHED_NORMAL 任务的 nice 值**共享： SCHED_NORMAL 任务使用的优先级范围是 **从 MAX_RT_PRIO 到 MAX_RT_PRIO+40**。在默认配置下，这意味着 **nice 值 −20 到 +19** 会被**一一映射**到 **优先级 100 到 139** 的区间。
+
+
+
