@@ -74,7 +74,13 @@ Remember the Unix motto:“Providemechanism, not policy.”
 
 As discussed in Chapter 3, the kernel is in process context during the execution of a sys-tem call.The current pointer points to the current task, which is the process that issued the syscall.
 
+正如第 3 章所述，**内核在执行系统调用的过程中处于进程上下文**，此时`current`指针指向当前任务，也就是发起该系统调用的进程。
+
 In process context, the kernel is capable of sleeping (for example, if the system call blocks on a call or explicitly calls schedule()) and is fully preemptible.These two points are important. First, the capability to sleep means that system calls can make use of the majority of the kernel’s functionality.As we will see in Chapter 7,“Interrupts and Interrupt Handlers,” the capability to sleep greatly simplifies kernel programming.7 Thefact that process context is preemptible implies that, like user-space, the current taskmay be preempted by another task. Because the new task may then execute the samesystem call, care must be exercised to ensure that system calls are reentrant. Of course,this is the same concern that symmetrical multiprocessing introduces. Synchronizingreentrancy is covered in Chapter 9,“An Introduction to Kernel Synchronization,” andChapter 10, “Kernel Synchronization Methods.”
 
+在进程上下文中，内核能够**进入睡眠状态**（例如，当系统调用在某个操作中发生阻塞，或显式调用`schedule()`函数时），且该上下文**完全可被抢占**。这两个特性至关重要：其一，支持睡眠意味着系统调用可以调用内核的绝大多数功能。我们将在第 7 章《中断与中断处理程序》中看到，睡眠能力极大地简化了内核的编程实现；其二，进程上下文可被抢占，意味着当前任务与用户空间进程一样，有可能被其他任务抢占。而新被调度执行的任务也可能调用同一个系统调用，因此**必须谨慎处理，以确保系统调用具备可重入性**。当然，这一问题与对称多处理（SMP）技术带来的问题本质相同。关于可重入性的同步保障，将在第 9 章《内核同步入门》和第 10 章《内核同步方法》中详细讲解。
+
 When the system call returns, control continues in system_call(), which ultimately switches to user-space and continues the execution of the user process.
+
+当系统调用执行完毕并返回时，程序的执行流程会回到`system_call()`函数中，该函数最终会完成内核态到用户态的切换，让发起调用的用户进程继续执行。
 
