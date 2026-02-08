@@ -59,6 +59,8 @@
 - [04 Process Scheduling](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/04%20Process%20Scheduling.md)
 - [05 System Calls](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/05%20System%20Calls.md)
 - [06 Kernel Data Structures](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/06%20Kernel%20Data%20Structures.md)
+- [07 Interrupts and Interrupt Handlers](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/07%20Interrupts%20and%20Interrupt%20Handlers.md)
+- [08 Bottom Halves andDeferring Work](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/08%20Bottom%20Halves%20andDeferring%20Work.md)
 - [Linux内核虚拟地址空间](https://github.com/Uyouii/Reading/blob/master/linux/Linux%E5%86%85%E6%A0%B8%E8%99%9A%E6%8B%9F%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4.md)
 ### **[<font color=#008000>Linux环境编程：从应用到内核</font>](https://github.com/Uyouii/Reading/blob/master/linux/Linux%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%EF%BC%9A%E4%BB%8E%E5%BA%94%E7%94%A8%E5%88%B0%E5%86%85%E6%A0%B8)**
 - [0 基础知识](https://github.com/Uyouii/Reading/blob/master/linux/Linux%E7%8E%AF%E5%A2%83%E7%BC%96%E7%A8%8B%EF%BC%9A%E4%BB%8E%E5%BA%94%E7%94%A8%E5%88%B0%E5%86%85%E6%A0%B8/0%20%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86.md)

@@ -6,3 +6,5 @@
 - [04 Process Scheduling](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/04%20Process%20Scheduling.md)
 - [05 System Calls](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/05%20System%20Calls.md)
 - [06 Kernel Data Structures](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/06%20Kernel%20Data%20Structures.md)
+- [07 Interrupts and Interrupt Handlers](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/07%20Interrupts%20and%20Interrupt%20Handlers.md)
+- [08 Bottom Halves andDeferring Work](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/08%20Bottom%20Halves%20andDeferring%20Work.md)
