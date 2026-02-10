@@ -150,5 +150,263 @@ Tasklets are built on softirqs and work queues are their ownsubsystem.
 
 其中，小任务基于软中断实现，而工作队列则是独立的子系统。
 
+### Softirqs
 
+The place to start this discussion of the actual bottom half methodsis with softirqs. Softirqs are rarely used directly; tasklets are a much morecommon form of bottom half. Nonetheless, because tasklets are built onsoftirqs, we cover them first.The softirq code lives in the file kernel/softirq.cin the kernel source tree.
+
+要开始讨论实际的**下半部（bottom half）** 实现机制，首先要从**软中断（softirq）** 讲起。软中断很少被直接使用；**任务小例（tasklet）** 是更常见的下半部形式。尽管如此，由于任务小例是基于软中断构建的，我们仍先讲解软中断。
+
+软中断相关代码位于内核源码树的 `kernel/softirq.c` 文件中。
+
+#### Implementing Softirqs
+
+Softirqs are statically allocated at compile time. Unlike tasklets, you cannot dynamically register and destroy softirqs. Softirqs arerepresented by the softirq_action structure, which is defined in<linux/interrupt.h>:
+
+软中断在**编译时静态分配**。与任务小例不同，你无法动态注册或销毁软中断。
+
+软中断由 `softirq_action` 结构体表示，该结构体定义在 `<linux/interrupt.h>` 头文件中：
+
+```c
+struct softirq_action {
+    void (*action)(struct softirq_action *);
+};
+```
+
+A 32-entry array of this structure is declared in kernel/softirq.c:
+
+该结构体的一个**32 项数组**在 `kernel/softirq.c` 中声明：
+
+```c
+static struct softirq_action softirq_vec[NR_SOFTIRQS];
+```
+
+Each registered softirq consumes one entry in the array. Consequently, there are  NR_SOFTIRQS registered softirqs.The number of registered softirqs isstatically determined at compile time and cannot be changeddynamically.The kernel enforces a limit of 32 registered softirqs; in thecurrent kernel, however, only nine exist.
+
+每个已注册的软中断占用数组中的一项。因此，系统中共有 `NR_SOFTIRQS` 个已注册软中断。已注册软中断的数量在编译时静态确定，**无法动态修改**。
+
+内核强制限制最多注册 32 个软中断；但在当前内核版本中，实际只实现了 9 个。
+
+```c
+void softirq_handler(struct softirq_action *)
+```
+
+When the kernel runs a softirq handler, it executes this action function with apointer to the corresponding softirq_action structure as its lone argument.For example, ifmy_softirq pointed to an entry in the softirq_vec array, thekernel would invoke the softirq handler function as
+
+当内核执行软中断处理函数时，会以**指向对应 `softirq_action` 结构体的指针**作为唯一参数，调用其 `action` 函数。
+
+例如，若 `my_softirq` 指向 `softirq_vec` 数组中的某一项，内核会以如下形式调用该软中断处理函数：
+
+```c
+my_softirq->action(my_softirq);
+```
+
+It seems a bit odd that the kernel passes the entire structure to the softirqhandler.This trick enables future additions to the structure without requiringa change in every softirq handler.
+
+内核将整个结构体传给软中断处理函数，这一做法看似有些奇怪。但这种设计可以在未来向结构体中新增字段时，**无需修改每一个软中断处理函数**。
+
+A softirq never preempts another softirq.The only event that can preempt asoftirq is an interrupt handler.Another softirq—even the same one—can run on anotherprocessor, however.
+
+一个软中断**不会抢占另一个软中断**。唯一能够抢占软中断的事件是**中断处理函数（硬中断）**。
+
+不过，另一个软中断（甚至是同一个软中断）可以在**其他处理器**上并行运行。
+
+#### Executing Softirqs
+
+A registered softirq must be marked before it willexecute.This is called raising the softirq. Usually, an interrupt handler marksits softirq for execution before returning.Then, at a suitable time, the softirqruns. Pending softirqs are checked for and executed in the fol-lowingplaces:
+
+- In the return from hardware interrupt code path
+- In the ksoftirqd kernel thread
+- In any code that explicitly checks for and executes pending softirqs, suchas the net-working subsystem
+
+已注册的软中断必须先被**标记**（mark）后才会执行，这个操作称为**触发软中断（raising the softirq）**。通常，中断处理函数会在返回前标记其对应的软中断，使其进入待执行状态；随后，内核会在合适的时机执行该软中断。待处理（pending）软中断的检查与执行会发生在以下场景：
+
+- 硬件中断处理完成后的**返回代码路径**中
+- ksoftirqd 内核线程中
+- 显式检查并执行待处理软中断的代码中（例如网络子系统）
+
+Regardless of the method of invocation, softirq execution occurs in`__do_softirq()`, which is invoked by do_softirq().The function is quite simple.If there are pending softirqs, `__do_softirq()` loops over each one, invoking its handler. Let’s lookat a simplified variant of the important part of `__do_softirq()`:
+
+无论通过哪种方式触发，软中断的执行最终都会进入 `__do_softirq()` 函数（该函数由 `do_softirq()` 调用）。这个函数的逻辑十分简洁：若存在待处理软中断，`__do_softirq()` 会遍历所有待处理项并调用其对应的处理函数。下面是 `__do_softirq()` 核心逻辑的简化版本：
+
+```c
+u32 pending;
+
+// 获取本地软中断待处理位图
+pending = local_softirq_pending();
+
+if (pending) {
+    struct softirq_action *h;
+
+    /* reset the pending bitmask */
+    set_softirq_pending(0);
+
+    h = softirq_vec;
+    do {
+        if (pending & 1) {
+            h->action(h);
+        }
+        h++;
+        pending >>= 1;
+    } while (pending);
+}                                                 
+```
+
+This snippet is the heart of softirq processing. It checks for, and executes,any pending softirqs. Specifically
+
+1.  It sets the pending local variable to the value returned by the local_softirq_pending() macro.This is a 32-bit mask of pending softirqs—ifbitn is set, the nth softirq is pending.
+2. Now that the pending bitmask of softirqs is saved, it clears the actualbitmask.
+3. The pointer h is set to the first entry in the softirq_vec.
+4.  If the first bit in pending is set, h->action(h) is called.
+5. The pointer h is incremented by one so that it now points to the secondentry in the softirq_vec array.
+6.  The bitmask pending is right-shifted by one.This tosses the first bit awayand moves all other bits one place to the right. Consequently, the second bitis now the first (and so on).
+7. The pointer h now points to the second entry in the array, and the pending bit-mask now has the second bit as the first. Repeat the previous steps.
+8. Continue repeating until pending is zero, at which point there are no morepend-ing softirqs and the work is done. Note, this check is sufficient toensure h always points to a valid entry in softirq_vec because pending has atmost 32 set bits and thus this loop executes at most 32 times.
+
+这段代码片段是软中断处理的核心，它负责检查并执行所有待处理的软中断。具体执行流程如下：
+
+1. 将局部变量 `pending` 赋值为 `local_softirq_pending()` 宏的返回值。该值是一个**32 位的待处理软中断掩码**—— 若第 n 位被置 1，则表示第 n 个软中断处于待处理状态。
+2. 保存好软中断的待处理位掩码后，清空内核中实际的软中断待处理位掩码（避免重复执行）。
+3. 将指针 `h` 指向 `softirq_vec` 数组的第一个元素。
+4. 若 `pending` 的第 1 位为 1，则调用 `h->action(h)`（执行该软中断的处理函数）。
+5. 将指针 `h` 自增 1，使其指向 `softirq_vec` 数组的第二个元素。
+6. 将位掩码 `pending` 右移 1 位 —— 这会丢弃原第 1 位，并将其余所有位向右移动一位（原第 2 位变为新第 1 位，以此类推）。
+7. 此时指针 `h` 已指向数组第二个元素，`pending` 的第 1 位对应原第 2 位，重复上述步骤（4-6）。
+8. 持续循环直至 `pending` 变为 0（无待处理软中断），此时处理完成。需注意：该检查机制可确保 `h` 始终指向 `softirq_vec` 的有效项 —— 因为 `pending` 最多有 32 位被置 1，所以循环最多执行 32 次。
+
+#### Using Softirqs
+
+Softirqs are reserved for the most timing-critical andimportant bottom-half processing on the system. Currently, only twosubsystems—networking and block devices—directly usesoftirqs.Additionally, kernel timers and tasklets are built on top of softirqs. Ifyou add a new softirq, you normally want to ask yourself why using a taskletis insufficient.Tasklets are dynamically created and are simpler to usebecause of their weaker locking require-ments, and they still perform quitewell. Nonetheless, for timing-critical applications that can do their ownlocking in an efficient way, softirqs might be the correct solution.
+
+软中断是为系统中**时序要求最严苛、最重要**的下半部（bottom-half）处理场景保留的机制。目前，只有两个子系统会**直接使用**软中断：网络子系统与块设备子系统。除此之外，内核定时器与 tasklet 也都是构建在软中断之上的。如果你打算新增一种软中断，通常需要先自问：使用 tasklet 为何无法满足需求？
+
+tasklet 支持动态创建，且由于其加锁约束更宽松，使用起来更为简单，同时性能依然十分出色。尽管如此，对于那些能够以高效方式自行实现加锁的**强时序敏感场景**，软中断仍可能是正确的选择。
+
+**Assigning an Index**
+
+You declare softirqs statically at compile time via anenum in <linux/interrupt.h>.The kernel uses this index, which starts at zero,as a relative priority. Softirqs with the lowest numerical priority executebefore those with a higher numerical priority.
+
+Creating a new softirq includes adding a new entry to this enum.Whenadding a new softirq, you might not want to simply add your entry to the end of the list, asyou would elsewhere. Instead, you need to insert the new entry depending onthe priority you want to give it. By convention, HI_SOFTIRQ is always the firstand RCU_SOFTIRQ is always the last entry.A new entry likely belongs inbetween BLOCK_SOFTIRQ and TASKLET_SOFTIRQ. Table 8.2 contains a listof the existing softirq types.
+
+你需要在**编译阶段**，通过 `<linux/interrupt.h>` 中的一个枚举类型**静态声明**软中断。内核使用这个从 0 开始的索引值作为**相对优先级**：数值越小的软中断，优先级越高，会优先执行。
+
+创建新软中断的步骤之一，就是向该枚举添加新条目。添加新软中断时，**不应像普通代码那样简单追加到列表末尾**，而应根据你期望的优先级将其插入到合适位置。按照内核惯例，`HI_SOFTIRQ` 永远是第一个枚举值，`RCU_SOFTIRQ` 永远是最后一个。新条目通常适合插入在 `BLOCK_SOFTIRQ` 与 `TASKLET_SOFTIRQ` 之间。表 8.2 列出了系统中现有的软中断类型。
+
+![Table 8.2](../../images/linux/LKD 8.2.jpg)
+
+The softirq handlers run with interrupts enabled and cannot sleep.While ahandler runs, softirqs on the current processor are disabled.Another processor,however, can exe-cute other softirqs. If the same softirq is raised againwhile it is executing, another proces-sor can run it simultaneously.Thismeans that any shared data—even global data used only within the softirqhandler—needs proper locking (as discussed in the next two chapters). Thisis an important point, and it is the reason tasklets are usually preferred.Simply pre-venting your softirqs from running concurrently is not ideal. If asoftirq obtained a lock to prevent another instance of itself from runningsimultaneously, there would be no reason to use a softirq. Consequently,most softirq handlers resort to per-processor data (data unique to eachprocessor and thus not requiring locking) and other tricks to avoid explicitlocking and provide excellent scalability.
+
+软中断处理函数运行时**中断处于开启状态**，且**不可睡眠**。当某个处理函数正在运行时，**当前处理器**上的所有软中断都会被禁用；但**其他处理器**仍可执行其他类型的软中断。如果同一个软中断在执行过程中被再次触发，另一个处理器可以**同时运行它的新实例**。
+
+这意味着：所有共享数据 —— 哪怕是仅在软中断处理函数内部使用的全局数据 —— 都必须**正确加锁保护**（后续两章会详细说明）。这一点至关重要，也是内核开发中**通常优先选用 tasklet** 的核心原因。
+
+单纯通过加锁阻止同一个软中断的多个实例并发运行，并非合理的设计：如果一个软中断需要靠加锁避免自身并发，那使用软中断就失去了意义。因此，绝大多数软中断处理函数都会采用**每处理器数据（per-processor /percpu data）**（每个处理器独有、无需加锁的数据）等设计技巧，避免显式加锁，从而实现极佳的可扩展能力。
+
+The raison d’être to softirqs is scalability. If you do not need to scale toinfinitely many processors, then use a tasklet.Tasklets are essentially softirqs in which multiple instances of the same handler cannot run concurrently on multipleprocessors.
+
+**软中断存在的核心价值，就是可扩展性**。如果你不需要支持大量处理器的高并发扩展，那么直接使用 tasklet 即可。tasklet 本质上就是**同一处理函数的多个实例，不允许在多个处理器上并发执行**的软中断。
+
+Softirqs are most often raised from within interrupt handlers. In the case of interrupt handlers, the interrupt handler performs the basic hardware-related work,raises the softirq, and then exits.When processing interrupts, the kernel invokes do_softirq().The softirq then runs and picks up where the interrupt handler left off. In this example, the “top half” and “bottom half” naming should make sense.
+
+软中断最常**在中断处理函数内部被触发**。典型流程如下：中断处理函数完成最基础的硬件相关工作，触发对应的软中断，随后立即退出。在中断处理流程中，内核会调用 `do_softirq()`，软中断随之执行，并承接中断处理函数遗留下来的后续工作。通过这个例子，“上半部（top half）” 与 “下半部（bottom half）” 的命名逻辑也就一目了然了。
+
+### Tasklets
+
+Tasklets are a bottom-half mechanism built on top of softirqs.Asmentioned, they have nothing to do with tasks.Tasklets are similar in natureand behavior to softirqs; however, they have a simpler interface and relaxedlocking rules.
+
+任务小体（Tasklets）是构建在软中断（softirqs）之上的一种下半部（bottom-half）机制。如前文所述，它与 “任务（tasks）” 毫无关联。任务小体在特性和行为上与软中断相似，但它拥有更简洁的接口，且锁定规则更为宽松。
+
+As a device driver author, the decision whether to use softirqs versustasklets is simple:
+
+作为设备驱动开发者，选择使用软中断还是任务小体的判断标准很简单：
+
+You almost always want to use tasklets.As we saw in the previous section,you can (almost) count on one hand the users of softirqs. Softirqs arerequired only for high-frequency and highly threaded uses.Tasklets, on theother hand, see much greater use. Tasklets work just fine for the vastmajority of cases and are very easy to use.
+
+你几乎都应该选择使用任务小体。正如我们在上一节中看到的，软中断的使用者屈指可数（一只手就能数过来）。软中断仅适用于高频且高并发的使用场景。而任务小体的应用则广泛得多 —— 它能满足绝大多数场景的需求，且使用起来极为简便。
+
+#### Implementing Tasklets
+
+Because tasklets are implemented on top of softirqs, they are softirqs.As discussed, tasklets are represented by two softirqs:HI_SOFTIRQ and TASKLET_SOFTIRQ.The only difference in these types isthat the HI_SOFTIRQ-based tasklets run prior to the TASKLET_SOFTIRQ-based tasklets.
+
+由于任务小体是基于软中断实现的，因此它本质上也是软中断。前文提到，任务小体由两种软中断承载：`HI_SOFTIRQ`（高优先级软中断）和`TASKLET_SOFTIRQ`（任务小体软中断）。这两种类型的唯一区别是：基于`HI_SOFTIRQ`的任务小体会优先于基于`TASKLET_SOFTIRQ`的任务小体执行。
+
+The Tasklet StructureTasklets are represented by the tasklet_structstructure. Each structure represents a unique tasklet.The structure isdeclared in <linux/interrupt.h>:
+
+任务小体由`tasklet_struct`结构体表示。每个该类型的结构体对应一个独立的任务小体。该结构体在头文件`<linux/interrupt.h>`中声明：
+
+```c
+/* Linux内核软中断 - 任务小体（tasklet）结构体定义 */
+struct tasklet_struct {
+    struct tasklet_struct *next;  /* 链表中的下一个任务小体 */
+    unsigned long state;          /* 任务小体的状态 */
+    atomic_t count;               /* 引用计数器（原子类型，防止并发访问） */
+    void (*func)(unsigned long);  /* 任务小体的处理函数（函数指针） */
+    unsigned long data;           /* 传递给处理函数的参数 */
+};
+```
+
+The func member is the tasklet handler (the equivalent of action to a softirq)and receives data as its sole argument.
+
+`func` 成员是任务小体的处理函数（相当于软中断的 `action` 函数），它仅接收 `data` 作为唯一参数。
+
+The state member is exactly zero, TASKLET_STATE_SCHED, orTASKLET_STATE_RUN.
+
+`state` 成员的取值只能是 0、`TASKLET_STATE_SCHED` 或 `TASKLET_STATE_RUN`。
+
+TASKLET_STATE_SCHED denotes a tasklet that is scheduled to run, andTASKLET_STATE_RUN denotes a tasklet that is running.As anoptimization,TASKLET_STATE_RUN is used only on multiprocessor machinesbecause a uniprocessor machine always knows whether the tasklet isrunning. (It is either the currently executing code, or not.)The count field isused as a reference count for the tasklet. If it is nonzero, the tasklet isdisabled and cannot run; if it is zero, the tasklet is enabled and can run ifmarked pending.
+
+`TASKLET_STATE_SCHED` 表示该任务小体已被调度待执行，而 `TASKLET_STATE_RUN` 表示该任务小体正在运行。作为一种优化设计，`TASKLET_STATE_RUN` 仅在多处理器机器上使用 —— 因为单处理器机器总能明确知晓任务小体是否正在运行（要么是当前正在执行的代码，要么就没有运行）。`count` 字段用作任务小体的引用计数器：若其值非零，任务小体处于禁用状态且无法运行；若其值为零，任务小体处于启用状态，且只要被标记为挂起（pending）就可以运行。
+
+#### Scheduling Tasklets
+
+Scheduled tasklets (the equivalent of raised softirqs)5are stored in two per-processor struc-tures: tasklet_vec (for regulartasklets) and tasklet_hi_vec (for high-priority tasklets). Both of thesestructures are linked lists of tasklet_struct structures. Eachtasklet_structstructure in the list represents a different tasklet.
+
+已调度的任务小体（相当于已触发的软中断）会被存储在两个**每处理器（per-processor）** 结构体中：`tasklet_vec`（用于普通任务小体）和`tasklet_hi_vec`（用于高优先级任务小体）。这两个结构体均为`tasklet_struct`结构体组成的链表，链表中的每个`tasklet_struct`结构体对应一个独立的任务小体。
+
+Tasklets are scheduled via the tasklet_schedule() and tasklet_hi_schedule() functions, which receive a pointer to the tasklet’s tasklet_struct as their loneargu-ment. Each function ensures that the provided tasklet is not yet      scheduled and then calls__tasklet_schedule() and __tasklet_hi_schedule() asappropriate.The two func-tions are similar. (The difference is that one usesTASKLET_SOFTIRQ and one usesHI_SOFTIRQ.) Writing and using tasklets iscovered in the next section. Now, let’s look at the steps tasklet_schedule()undertakes:
+
+1. Check whether the tasklet’s state is TASKLET_STATE_SCHED. If it is, thetasklet is already scheduled to run and the function can immediately return.
+2. Call __tasklet_schedule().
+3. Save the state of the interrupt system, and then disable localinterrupts.This ensures that nothing on this processor will mess with the tasklet code whiletasklet_schedule() is manipulating the tasklets.
+4. Add the tasklet to be scheduled to the head of the tasklet_vec or tasklet_hi_vec linked list, which is unique to each processor in the system.
+5. Raise the TASKLET_SOFTIRQ or HI_SOFTIRQ softirq, so do_softirq()executes this tasklet in the near future.
+6. Restore interrupts to their previous state and return.
+
+任务小体通过`tasklet_schedule()`和`tasklet_hi_schedule()`函数完成调度，这两个函数仅接收一个参数 —— 指向该任务小体`tasklet_struct`结构体的指针。每个函数都会先检查待调度的任务小体是否已处于调度状态，确认未调度后，再分别调用`__tasklet_schedule()`和`__tasklet_hi_schedule()`（二者逻辑相似，核心区别是前者关联`TASKLET_SOFTIRQ`软中断，后者关联`HI_SOFTIRQ`软中断）。任务小体的编写与使用方法将在下一节讲解，接下来我们先梳理`tasklet_schedule()`的执行步骤：
+
+1. 检查任务小体的`state`字段是否为`TASKLET_STATE_SCHED`。若为该值，说明任务小体已被调度待执行，函数可直接返回。
+2. 调用`__tasklet_schedule()`函数。
+3. 保存当前中断系统的状态，随后**禁用本地中断**。这一步能确保在`tasklet_schedule()`操作任务小体期间，当前处理器上的其他逻辑不会干扰任务小体相关代码的执行。
+4. 将待调度的任务小体添加到`tasklet_vec`（普通任务小体）或`tasklet_hi_vec`（高优先级任务小体）链表的表头 —— 这两个链表在系统中每个处理器都有独立的实例。
+5. 触发`TASKLET_SOFTIRQ`或`HI_SOFTIRQ`软中断，使`do_softirq()`函数能在近期执行该任务小体。
+6. 恢复中断系统至之前的状态，函数返回。
+
+At the next earliest convenience, do_softirq() is run as discussed in theprevious sec-tion. Because most tasklets and softirqs are marked pending ininterrupt handlers,do_softirq() most likely runs when the last interruptreturns. BecauseTASKLET_SOFTIRQ or HI_SOFTIRQ is now raised,do_softirq() executes the associated handlers.These handlers,tasklet_action() and tasklet_hi_action(), are the heart of tasklet processing.Let’s look at the steps these handlers perform:
+
+1. Disable local interrupt delivery (there is no need to first save their statebecause the     code here is always called as a softirq handler and interrupts are always enabled) and retrieve the tasklet_vec or tasklet_hi_vec list for this processor.
+2.  Clear the list for this processor by setting it equal to NULL.
+3. Enable local interrupt delivery.Again, there is no need to restore them totheir pre-vious state because this function knows that they were alwaysoriginally enabled.
+4. Loop over each pending tasklet in the retrieved list.
+5. If this is a multiprocessing machine, check whether the tasklet is runningon another processor by checking the TASKLET_STATE_RUN flag. If it iscurrently run-ning, do not execute it now and skip to the next pendingtasklet. (Recall that only one tasklet of a given type may run concurrently.)
+6. If the tasklet is not currently running, set the TASKLET_STATE_RUN flag,so another processor will not run it.
+7.  Check for a zero count value, to ensure that the tasklet is not disabled. Ifthe tasklet is disabled, skip it and go to the next pending tasklet.
+8.  We now know that the tasklet is not running elsewhere, is marked asrunning so it   will not start running elsewhere, and has a zero count value. Run the tasklethandler.
+9. After the tasklet runs, clear the TASKLET_STATE_RUN flag in thetasklet’s state field.
+10.  Repeat for the next pending tasklet, until there are no more scheduledtasklets waiting to run.
+
+在接下来的第一个合适时机，`do_softirq()`函数会按上一节所述逻辑执行。由于绝大多数任务小体和软中断的 “挂起” 标记都是在中断处理函数中设置的，因此`do_softirq()`最常在上一个中断处理完成返回时运行。此时`TASKLET_SOFTIRQ`或`HI_SOFTIRQ`已被触发，`do_softirq()`会执行对应的处理函数 ——`tasklet_action()`和`tasklet_hi_action()`，这两个函数是任务小体处理逻辑的核心。以下是它们的执行步骤：
+
+1. 禁用本地中断交付（无需先保存中断状态，因为这段代码始终作为软中断处理函数被调用，而软中断执行时中断始终是开启的），并获取当前处理器对应的`tasklet_vec`或`tasklet_hi_vec`链表。
+2. 将当前处理器的该链表置为`NULL`，清空待处理的任务小体列表。
+3. 启用本地中断交付。同样无需恢复至之前的状态，因为该函数明确知道中断原本就是开启的。
+4. 遍历获取到的链表中所有待执行的任务小体。
+5. 若运行在多处理器机器上，通过检查`TASKLET_STATE_RUN`标志位，判断该任务小体是否正在其他处理器上运行。若正在运行，则不立即执行，跳过该任务小体处理下一个。（需注意：同一类型的任务小体仅允许一个实例并发执行。）
+6. 若该任务小体当前未运行，则设置`TASKLET_STATE_RUN`标志位，防止其他处理器执行该任务小体。
+7. 检查`count`字段是否为 0，确保任务小体未被禁用。若任务小体处于禁用状态，跳过该任务小体处理下一个。
+8. 此时可确认：该任务小体未在其他处理器运行、已标记为 “运行中” 以避免被其他处理器启动、且`count`值为 0（已启用）。调用该任务小体的处理函数。
+9. 任务小体处理函数执行完成后，清空其`state`字段中的`TASKLET_STATE_RUN`标志位。
+10. 重复步骤 4-9，直至链表中无待执行的已调度任务小体。
+
+The implementation of tasklets is simple, but rather clever.As you saw, alltasklets are multiplexed on top of two softirqs, HI_SOFTIRQ andTASKLET_SOFTIRQ.When a tasklet is scheduled, the kernel raises one ofthese softirqs.These softirqs, in turn, are handled by special functions thatthen run any scheduled tasklets.The special functions ensure that only onetasklet of a given type runs at the same time. (But other tasklets can run simulta-neously.) All this complexity is then hidden behind a clean andsimple interface.
+
+任务小体的实现逻辑简洁却颇具巧思。如前文所述，所有任务小体都复用到两个软中断（`HI_SOFTIRQ`和`TASKLET_SOFTIRQ`）之上：当任务小体被调度时，内核会触发对应的软中断；而这些软中断又由专用函数处理，进而执行所有已调度的任务小体。这些专用函数能保证 “同一类型的任务小体仅一个实例同时运行”（但不同类型的任务小体可并行执行）。所有这些复杂的底层逻辑，最终都被封装在简洁易用的接口之下，对上层开发者透明。
 
