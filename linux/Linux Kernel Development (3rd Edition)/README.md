@@ -8,3 +8,6 @@
 - [06 Kernel Data Structures](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/06%20Kernel%20Data%20Structures.md)
 - [07 Interrupts and Interrupt Handlers](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/07%20Interrupts%20and%20Interrupt%20Handlers.md)
 - [08 Bottom Halves andDeferring Work](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/08%20Bottom%20Halves%20andDeferring%20Work.md)
+- [09 An Introduction to Kernel Synchronization](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/09%20An%20Introduction%20to%20Kernel%20Synchronization.md)
+- [10 Kernel Synchronization Methods](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/10%20Kernel%20Synchronization%20Methods.md)
+- [11 Timers and Time Management](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/11%20Timers%20and%20Time%20Management.md)
