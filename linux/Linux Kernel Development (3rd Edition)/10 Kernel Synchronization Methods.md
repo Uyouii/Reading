@@ -945,3 +945,5 @@ The barrier() method prevents the compiler from optimizing loads or stores acros
 `barrier()` 函数会阻止编译器跨越该调用对加载或存储操作进行优化。编译器知道不能以改变 C 代码效果和现有数据依赖的方式重排读写操作，但它无法感知当前上下文之外可能发生的事件。例如，编译器不知道中断程序可能会读取你正在写入的数据。出于这个原因，你可能需要确保某一次存储操作先于某一次加载操作执行。前面提到的内存屏障同时也能作为编译器屏障，但编译器屏障比内存屏障轻量得多。实际上，编译器屏障几乎没有开销，因为它只是阻止编译器**可能**进行的指令重排。
 
 Note that the actual effects of the barriers vary for each architecture. For example, if amachine does not perform out-of-order stores (for example, Intel x86 processors donot), wmb() does nothing.You can use the appropriate memory barrier for the worstcase (that is, the weakest ordering processor) and your code will compile optimally foryour architecture.
+
+需注意，内存屏障的实际作用会因处理器架构的不同而有所差异。例如，若某类处理器不执行乱序存储操作（比如英特尔 x86 处理器就不会这么做），那么 `wmb()` 不会产生任何作用。你只需针对最坏情况（即内存顺序约束最弱的处理器）使用对应的内存屏障，代码就会针对目标架构编译出最优的结果。

@@ -102,7 +102,7 @@ The state field of the process descriptor describesthe current condition of the 
 - **__TASK_TRACED**—— 进程正被另一个进程跟踪，例如调试器通过 `ptrace` 工具实现的跟踪功能。
 - **__TASK_STOPPED**—— 进程的执行已暂停；此时进程既没有运行，也不具备运行资格。当进程接收到 `SIGSTOP`、`SIGTSTP`、`SIGTTIN` 或 `SIGTTOU` 信号时，或者在被调试期间接收到任意信号时，都会进入该状态。
 
-### 
+
 
 ![Figure 3.3](../../images/linux/KDE3.3.jpg)
 

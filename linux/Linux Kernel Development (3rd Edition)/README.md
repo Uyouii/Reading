@@ -11,3 +11,4 @@
 - [09 An Introduction to Kernel Synchronization](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/09%20An%20Introduction%20to%20Kernel%20Synchronization.md)
 - [10 Kernel Synchronization Methods](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/10%20Kernel%20Synchronization%20Methods.md)
 - [11 Timers and Time Management](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/11%20Timers%20and%20Time%20Management.md)
+- [12 Memory Management](https://github.com/Uyouii/Reading/blob/master/linux/Linux%20Kernel%20Development%20%283rd%20Edition%29/12%20Memory%20Management.md)
