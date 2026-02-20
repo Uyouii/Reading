@@ -1,3 +1,5 @@
+[toc]
+
 ## 14 The Block I/O Layer
 
 B*lock devices* are hardware devices distinguished by the random (that is, not necessarily sequential) access of fixed-size chunks of data.The fixed-size chunks of data are called *blocks*.The most common block device is a hard disk, but many other block devices exist, such as floppy drives, Blu-ray readers, and flash memory. Notice how these are all devices on which you mount a filesystem—filesystems are the lingua franca of block devices.

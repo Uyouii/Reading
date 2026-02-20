@@ -1,3 +1,5 @@
+[toc]
+
 ## 07 Interrupts and Interrupt Handlers
 
 A core responsibility of any operating system kernel is managing thehardware con-nected to the machine—hard drives and Blu-ray discs,keyboards and mice, 3D processors and wireless radios.To meet thisresponsibility, the kernel needs to communicate with the machine’s individualdevices. Given that processors can be orders of magnitudes faster than thehardware they talk to, it is not ideal for the kernel to issue a request andwait for a response from the significantly slower hardware. Instead, becausethe hardware is com-paratively slow to respond, the kernel must be free togo and handle other work, dealing with the hardware only after thathardware has actually completed its work.

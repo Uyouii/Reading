@@ -1,3 +1,5 @@
+[toc]
+
 ## 10 Kernel Synchronization Methods
 
 The previous chapter discussed the sources of and solutions to race conditions.Thank-fully, the Linux kernel provides a family of synchronization methods.The Linux kernel’ssynchronization methods enable developers to write efficient and race-free code.Thischapter discusses these methods and their interfaces, behavior, and use.

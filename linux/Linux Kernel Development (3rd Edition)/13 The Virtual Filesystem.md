@@ -1,3 +1,5 @@
+[toc]
+
 ## 13 The Virtual Filesystem
 
 The *Virtual Filesystem* (sometimes called the *Virtual File Switch* or more commonly sim- ply the *VFS*) is the subsystem of the kernel that implements the file and filesystem-related interfaces provided to user-space programs.All filesystems rely on theVFS to enable them not only to coexist, but also to interoperate.This enables programs to use standard Unix system calls to read and write to different filesystems, even on different media, as shown in Figure 13.1.

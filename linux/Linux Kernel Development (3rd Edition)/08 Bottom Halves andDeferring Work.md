@@ -1,3 +1,5 @@
+[toc]
+
 ## 08 Bottom Halves andDeferring Work
 
 The previous chapter discussed interrupt handlers, the kernel mechanism fordealing with hardware interrupts. Interrupt handlers are an important—indeed, required—part of any operating system. Due to various limitations,however, interrupt handlers can form only the first half of any interruptprocessing solution.These limitations include

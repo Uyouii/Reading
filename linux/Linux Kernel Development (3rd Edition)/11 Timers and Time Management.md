@@ -1,3 +1,5 @@
+[toc]
+
 ## 11 Timers and Time Management
 
 The passing of time is important to the kernel.A large number of kernel functions aretime-driven, as opposed to event-driven.1 Some of these functions are periodic, suchas balancing the scheduler runqueues or refreshing the screen.They occur on a fixedsched-ule, such as 100 times per second.The kernel schedules other functions, such asdelayed disk I/O, at a relative time in the future. For example, the kernel might schedulework for 500 milliseconds from now. Finally, the kernel must also manage the systemuptime and the current date and time.

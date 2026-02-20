@@ -1,3 +1,5 @@
+[toc]
+
 ## 09 An Introduction to Kernel Synchronization
 
 In a shared memory application, developers must ensure that sharedresources are pro-tected from concurrent access.The kernel is no exception.Shared resources require pro-tection from concurrent access because ifmultiple threads of execution1 access and manipulate the data at the sametime, the threads may overwrite each other’s changes or access data while itis in an inconsistent state. Concurrent access of shared data is a recipe forinstability that often proves hard to track down and debug—getting it rightat the start is important.
