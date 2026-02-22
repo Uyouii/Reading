@@ -304,7 +304,7 @@
 - [算法](https://github.com/Uyouii/Reading/blob/master/%E7%AE%97%E6%B3%95/%E7%AE%97%E6%B3%95.md)
 ## **[<font color=#008000>设计</font>](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1)**
 ### **[<font color=#008000>TCMalloc</font>](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1/TCMalloc)**
-- [TCMalloc](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1/TCMalloc/TCMalloc.md)
+- [design.cn](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1/TCMalloc/design.cn.md)
 - [design](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1/TCMalloc/design.md)
 ## **[<font color=#008000>设计模式</font>](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F)**
 - [Head First设计模式(第二版)](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/Head%20First%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%28%E7%AC%AC%E4%BA%8C%E7%89%88%29.md)
