@@ -37,6 +37,8 @@
 - [23 慢查询日志](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/redis/redis%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/23%20%E6%85%A2%E6%9F%A5%E8%AF%A2%E6%97%A5%E5%BF%97.md)
 - [数据结构](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/redis/redis%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84.md)
 - [附录](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/redis/redis%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0/%E9%99%84%E5%BD%95.md)
+## **[<font color=#008000>数据库系统内幕</font>](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B3%BB%E7%BB%9F%E5%86%85%E5%B9%95)**
+- [第 7 章 日志结构存储](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%95%B0%E6%8D%AE%E5%BA%93%E7%B3%BB%E7%BB%9F%E5%86%85%E5%B9%95/%E7%AC%AC%207%20%E7%AB%A0%20%E6%97%A5%E5%BF%97%E7%BB%93%E6%9E%84%E5%AD%98%E5%82%A8.md)
 ## **[<font color=#008000>高性能MySQL</font>](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/%E9%AB%98%E6%80%A7%E8%83%BDMySQL)**
 - [第1章 MySQL架构与历史](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/%E9%AB%98%E6%80%A7%E8%83%BDMySQL/%E7%AC%AC1%E7%AB%A0%20MySQL%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%8E%86%E5%8F%B2.md)
 - [第2章 可靠性工程世界中的监控](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/%E9%AB%98%E6%80%A7%E8%83%BDMySQL/%E7%AC%AC2%E7%AB%A0%20%E5%8F%AF%E9%9D%A0%E6%80%A7%E5%B7%A5%E7%A8%8B%E4%B8%96%E7%95%8C%E4%B8%AD%E7%9A%84%E7%9B%91%E6%8E%A7.md)
