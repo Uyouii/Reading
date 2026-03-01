@@ -1,7 +1,5 @@
 # 数据库
 
-## **[<font color=#008000>Gorilla</font>](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/Gorilla)**
-- [Gorilla: A Fast, Scalable, In-Memory Time Series Database 2015](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/Gorilla/Gorilla%3A%20A%20Fast%2C%20Scalable%2C%20In-Memory%20Time%20Series%20Database%202015.md)
 ## **[<font color=#008000>MySql技术内幕 InnoDB存储引擎</font>](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/MySql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95%20InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E)**
 - [第1章 Mysql体系结构和存储引擎](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/MySql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95%20InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/%E7%AC%AC1%E7%AB%A0%20Mysql%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84%E5%92%8C%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E.md)
 - [第2章 InnoDB存储引擎](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/MySql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95%20InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/%E7%AC%AC2%E7%AB%A0%20InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E.md)

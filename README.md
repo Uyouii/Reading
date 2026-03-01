@@ -160,8 +160,6 @@
 - [Enet源码分析](https://github.com/Uyouii/Reading/blob/master/%E5%BC%80%E6%BA%90%E7%BD%91%E7%BB%9C%E5%BA%93/Enet%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90.md)
 - [Kcp阅读](https://github.com/Uyouii/Reading/blob/master/%E5%BC%80%E6%BA%90%E7%BD%91%E7%BB%9C%E5%BA%93/Kcp%E9%98%85%E8%AF%BB.md)
 ## **[<font color=#008000>数据库</font>](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93)**
-### **[<font color=#008000>Gorilla</font>](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/Gorilla)**
-- [Gorilla: A Fast, Scalable, In-Memory Time Series Database 2015](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/Gorilla/Gorilla%3A%20A%20Fast%2C%20Scalable%2C%20In-Memory%20Time%20Series%20Database%202015.md)
 ### **[<font color=#008000>MySql技术内幕 InnoDB存储引擎</font>](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/MySql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95%20InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E)**
 - [第1章 Mysql体系结构和存储引擎](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/MySql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95%20InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/%E7%AC%AC1%E7%AB%A0%20Mysql%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84%E5%92%8C%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E.md)
 - [第2章 InnoDB存储引擎](https://github.com/Uyouii/Reading/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93/MySql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95%20InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E/%E7%AC%AC2%E7%AB%A0%20InnoDB%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E.md)
@@ -280,10 +278,13 @@
 - [05 Gradient descent in practice](https://github.com/Uyouii/Reading/blob/master/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/Coursera-Machiine-Learning/Notes/05%20Gradient%20descent%20in%20practice.md)
 ## **[<font color=#008000>消息队列</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97)**
 ### **[<font color=#008000>kafka</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka)**
+#### **[<font color=#008000>kafka权威指南（第2版）</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/kafka%E6%9D%83%E5%A8%81%E6%8C%87%E5%8D%97%EF%BC%88%E7%AC%AC2%E7%89%88%EF%BC%89)**
+- [01 初识Kafka](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/kafka%E6%9D%83%E5%A8%81%E6%8C%87%E5%8D%97%EF%BC%88%E7%AC%AC2%E7%89%88%EF%BC%89/01%20%E5%88%9D%E8%AF%86Kafka.md)
+- [06 深入Kafka](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/kafka%E6%9D%83%E5%A8%81%E6%8C%87%E5%8D%97%EF%BC%88%E7%AC%AC2%E7%89%88%EF%BC%89/06%20%E6%B7%B1%E5%85%A5Kafka.md)
+- [07 可靠的数据传递](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/kafka%E6%9D%83%E5%A8%81%E6%8C%87%E5%8D%97%EF%BC%88%E7%AC%AC2%E7%89%88%EF%BC%89/07%20%E5%8F%AF%E9%9D%A0%E7%9A%84%E6%95%B0%E6%8D%AE%E4%BC%A0%E9%80%92.md)
+- [08 精确一次性语义](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/kafka%E6%9D%83%E5%A8%81%E6%8C%87%E5%8D%97%EF%BC%88%E7%AC%AC2%E7%89%88%EF%BC%89/08%20%E7%B2%BE%E7%A1%AE%E4%B8%80%E6%AC%A1%E6%80%A7%E8%AF%AD%E4%B9%89.md)
 #### **[<font color=#008000>图解 Kafka 之实战指南</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E5%9B%BE%E8%A7%A3%20Kafka%20%E4%B9%8B%E5%AE%9E%E6%88%98%E6%8C%87%E5%8D%97)**
 - [01 初识Kafka](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E5%9B%BE%E8%A7%A3%20Kafka%20%E4%B9%8B%E5%AE%9E%E6%88%98%E6%8C%87%E5%8D%97/01%20%E5%88%9D%E8%AF%86Kafka.md)
-#### **[<font color=#008000>深入理解kafka：核心原理与设计实践</font>](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3kafka%EF%BC%9A%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E8%AE%BE%E8%AE%A1%E5%AE%9E%E8%B7%B5)**
-- [第1章 初识Kafka](https://github.com/Uyouii/Reading/blob/master/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/kafka/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3kafka%EF%BC%9A%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86%E4%B8%8E%E8%AE%BE%E8%AE%A1%E5%AE%9E%E8%B7%B5/%E7%AC%AC1%E7%AB%A0%20%E5%88%9D%E8%AF%86Kafka.md)
 ## **[<font color=#008000>监控</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7)**
 ### **[<font color=#008000>Prometheus</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/Prometheus)**
 #### **[<font color=#008000>Prometheus-TSDB</font>](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/Prometheus/Prometheus-TSDB)**
