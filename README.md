@@ -130,6 +130,8 @@
 ### **[<font color=#008000>ZooKeeper</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper)**
 - [ZooKeeper: Wait-free coordination for Internet-scale systems](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/ZooKeeper%3A%20Wait-free%20coordination%20for%20Internet-scale%20systems.md)
 - [Zookeeper.zh](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/Zookeeper.zh.md)
+### **[<font color=#008000>技术博客</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2)**
+- [Netflix TechBlog - Active-Active for Multi-Regional Resiliency](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2/Netflix%20TechBlog%20-%20Active-Active%20for%20Multi-Regional%20Resiliency.md)
 ### **[<font color=#008000>数据密集型应用系统</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F)**
 - [Chapter 1. Reliable, Scalable, and Maintainable Applications](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F/Chapter%201.%20Reliable%2C%20Scalable%2C%20and%20Maintainable%20Applications.md)
 - [Chapter 10. Batch Processing](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F/Chapter%2010.%20Batch%20Processing.md)
@@ -154,6 +156,8 @@
 - [chapter 4 transform](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Real%20Time%20Rendering/chapter%204%20transform.md)
 - [chapter3 gpu](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Real%20Time%20Rendering/chapter3%20gpu.md)
 - [real time rendering 4th](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Real%20Time%20Rendering/real%20time%20rendering%204th.md)
+## **[<font color=#008000>大模型</font>](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B)**
+- [roadmap](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/roadmap.md)
 ## **[<font color=#008000>开源网络库</font>](https://github.com/Uyouii/Reading/blob/master/%E5%BC%80%E6%BA%90%E7%BD%91%E7%BB%9C%E5%BA%93)**
 ### **[<font color=#008000>BBR</font>](https://github.com/Uyouii/Reading/blob/master/%E5%BC%80%E6%BA%90%E7%BD%91%E7%BB%9C%E5%BA%93/BBR)**
 - [BBR](https://github.com/Uyouii/Reading/blob/master/%E5%BC%80%E6%BA%90%E7%BD%91%E7%BB%9C%E5%BA%93/BBR/BBR.md)
@@ -306,9 +310,11 @@
 - [Bayesian Online Changepoint Detection](https://github.com/Uyouii/Reading/blob/master/%E7%9B%91%E6%8E%A7/%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91/Bayesian%20Online%20Changepoint%20Detection.md)
 ## **[<font color=#008000>算法</font>](https://github.com/Uyouii/Reading/blob/master/%E7%AE%97%E6%B3%95)**
 - [算法](https://github.com/Uyouii/Reading/blob/master/%E7%AE%97%E6%B3%95/%E7%AE%97%E6%B3%95.md)
+## **[<font color=#008000>系统设计</font>](https://github.com/Uyouii/Reading/blob/master/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1)**
+- [Head First设计模式(第二版)](https://github.com/Uyouii/Reading/blob/master/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/Head%20First%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%28%E7%AC%AC%E4%BA%8C%E7%89%88%29.md)
+### **[<font color=#008000>Implementing Domain Driven Desgin</font>](https://github.com/Uyouii/Reading/blob/master/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/Implementing%20Domain%20Driven%20Desgin)**
+- [01 Getting Started with DDD](https://github.com/Uyouii/Reading/blob/master/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/Implementing%20Domain%20Driven%20Desgin/01%20Getting%20Started%20with%20DDD.md)
 ## **[<font color=#008000>设计</font>](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1)**
 ### **[<font color=#008000>TCMalloc</font>](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1/TCMalloc)**
 - [design.cn](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1/TCMalloc/design.cn.md)
 - [design](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1/TCMalloc/design.md)
-## **[<font color=#008000>设计模式</font>](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F)**
-- [Head First设计模式(第二版)](https://github.com/Uyouii/Reading/blob/master/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/Head%20First%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%28%E7%AC%AC%E4%BA%8C%E7%89%88%29.md)

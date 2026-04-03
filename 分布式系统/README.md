@@ -14,6 +14,8 @@
 ## **[<font color=#008000>ZooKeeper</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper)**
 - [ZooKeeper: Wait-free coordination for Internet-scale systems](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/ZooKeeper%3A%20Wait-free%20coordination%20for%20Internet-scale%20systems.md)
 - [Zookeeper.zh](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/ZooKeeper/Zookeeper.zh.md)
+## **[<font color=#008000>技术博客</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2)**
+- [Netflix TechBlog - Active-Active for Multi-Regional Resiliency](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%8A%80%E6%9C%AF%E5%8D%9A%E5%AE%A2/Netflix%20TechBlog%20-%20Active-Active%20for%20Multi-Regional%20Resiliency.md)
 ## **[<font color=#008000>数据密集型应用系统</font>](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F)**
 - [Chapter 1. Reliable, Scalable, and Maintainable Applications](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F/Chapter%201.%20Reliable%2C%20Scalable%2C%20and%20Maintainable%20Applications.md)
 - [Chapter 10. Batch Processing](https://github.com/Uyouii/Reading/blob/master/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F/Chapter%2010.%20Batch%20Processing.md)
