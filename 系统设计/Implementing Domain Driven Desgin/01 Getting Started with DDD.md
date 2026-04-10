@@ -139,3 +139,63 @@ If the domain you are working in is truly distinguishing to your business, domai
 
 **Justification for Domain Modeling**
 
+*Tactical modeling* is generally more complex than *strategic modeling*. Thus, if you intend to develop a domain model using the DDD tactical patterns (Aggre- gates, Services, Value Objects, Events, and so forth), doing so will require more careful thought and greater investment. Since this is so, how does an organiza- tion justify tactical domain modeling? What criteria can be used to qualify a given project for the extra investment needed to properly apply DDD from top to bottom?
+
+**战术建模**通常比**战略建模**更为复杂。因此，若你打算运用领域驱动设计（DDD）的战术模式（聚合、服务、值对象、领域事件等）构建领域模型，就需要投入更缜密的思考与更多的成本。既然如此，企业该如何论证开展战术领域建模的合理性？又该依据哪些标准，判定某个项目值得追加投入，从头到尾完整落地 DDD 方法论？
+
+Picture yourself leading an expedition through unfamiliar territory. You would want to understand the surrounding landmasses and borders. Your team would study maps, maybe even draw their own, and determine their stra- tegic approach. You would consider aspects of the terrain and how it could be used to your advantage. No matter how much planning is done, some facets of such an endeavor are going to be really difficult.
+
+想象你正带领一支探险队穿越未知地域。你需要摸清周边的地貌与边界，团队会研读地图，甚至自行绘制专属地图，制定整体战略行进方案。你会考量地形特征，思考如何利用地形为己方创造优势。无论前期规划多么详尽，这类探险行动中总会有部分环节极具挑战性。
+
+If your strategy indicated that you’d have to scale a vertical rock face, you’d need some fitting tactical tools and maneuvers for that ascent. Standing at the bottom and looking up, you might see some indication of specific challenges and perilous areas. Yet, you wouldn’t see every detail until you were on the rock face. You might need to drive pitons into slick rock, but you could use var- ious-size cams to wedge into natural cracks. To latch on to these climbing pro- tections, you’d bring along your carabiners. You would try to take as straight a path as possible but would have to make specific determinations point by point. Sometimes you might even have to backtrack and reroute depending on what the rock dictated. Many people think of climbing as a dangerous thrill sport, but those who actually climb will tell you it’s safer than driving a car or flying an airplane. Clearly, for that to be true, climbers need to understand the tools and techniques and how to judge the rock.
+
+如果战略规划显示必须攀登一处垂直岩壁，你就需要配备适配的战术工具与攀爬技巧。站在山底向上眺望，或许能预判到部分具体挑战与危险区域，但唯有身处岩壁之上，才能看清所有细节。你可能需要在光滑的岩壁上打入岩钉，用不同尺寸的凸轮塞楔入天然裂缝；为扣住这些攀岩保护点，还会随身携带登山快挂。你会尽量选择最笔直的路线，却必须逐点做出具体判断；有时甚至需要根据岩壁实际情况折返、重新规划路线。很多人将攀岩视作危险的极限运动，但真正的攀岩者会告诉你，它比驾车或乘飞机更安全。显然，要实现这一点，攀岩者必须熟练掌握工具与技巧，学会判断岩壁状况。
+
+If developing a given **Subdomain (2)** requires such a difficult, even precari- ous, ascent, we’d bring the DDD tactical patterns along for the climb. A busi- ness initiative that matches the criteria of the Core Domain should not quickly dismiss the use of the tactical patterns. The Core Domain is an unknown and complex area. The team is best protected against a disastrous mid-asset fall if using the right tactics.
+
+若某个**子域 (2)**的开发如同这场艰难甚至凶险的攀登，我们就需要借助 DDD 的战术模式来完成这场 “攀爬”。符合**核心域**判定标准的业务项目，绝不应轻易放弃使用战术模式。核心域本身就是未知且复杂的业务领域，团队运用恰当的战术设计，才能最大程度避免项目推进过程中出现灾难性崩盘。
+
+Here’s some practical guidance. I begin with the high-level ones and prog- ress to more details:
+
+- If a Bounded Context is being developed as the Core Domain, it is stra- tegically vital to the success of the business. The core model is not well understood and will require lots of experimentation and refactoring. It likely deserves commitment to longevity with continuous enhancement. It may not always be your Core Domain. Nonetheless, if the Bounded Context is complex, innovative, and needs to endure for a long time as it undergoes change, strongly consider the use of the tactical patterns as an investment in the future of your business. This assumes that your Core Domain deserves the best developer resources with a high skill level.
+- A domain that may become a **Generic Subdomain (2)** or Supporting Sub- domain to its consumers may actually be a Core Domain to your busi- ness. You don’t always judge a domain from the viewpoint of its ultimate consumers. If you are developing a Bounded Context as your chief business initiative, it is your Core Domain regardless of how it is viewed by customers outside your business. Strongly consider the use of the tactical patterns.
+- If you are developing a Supporting Subdomain that, for various reasons, cannot be acquired as a third-party Generic Subdomain, it is possible that the tactical patterns would benefit your efforts. In this case consider the skill level of the team and whether or not the model is new and inno- vative. It is innovative if it adds specific business value, captures special knowledge, and is not just technically intriguing. If the team is capable of properly applying tactical design, and the Supporting Subdomain is inno- vative and must endure for years in the future, this is a good opportunity to invest in your software using tactical design. However, this does not make this model the Core Domain since in the eyes of the business it is merely Supporting.
+
+这里提供一些实操性指导。我先从高层原则讲起，再逐步深入细节：
+
+- 如果某个**限界上下文**被开发为**核心域**，那么它在战略层面对业务的成功至关重要。核心领域模型尚未被充分理解，需要大量的探索试验与重构迭代，这类模型通常值得长期投入并持续优化升级。它未必永远是你的核心域。但只要该限界上下文具备复杂性、创新性，且需要在持续变更中长期存续，就应强烈考虑采用战术模式，将其作为对业务未来的投资。这一判断的前提是，你的核心域能够调配到高水平、高能力的优质研发资源。
+- 某个领域，对其使用者而言或许是**通用子域**或**支撑子域**，但对自身业务来说，它实则是核心域。判断一个领域，不能总站在最终使用者的视角。如果你将某个限界上下文作为核心业务项目来开发，那么无论企业外部的客户如何看待它，它都是你的核心域。对此应强烈考虑采用战术模式。
+- 如果你正在开发一个支撑子域，且因种种原因无法通过采购第三方通用子域的方式替代，那么战术模式很可能会为你的开发工作带来增益。这种情况下，需要考量团队的技术水平，以及该领域模型是否新颖且具备业务创新性。所谓业务创新，是指能创造专属业务价值、沉淀特殊业务知识，而非仅在技术层面显得新颖有趣。如果团队有能力妥善落地战术设计，且该支撑子域具备业务创新性、需要在未来数年持续迭代维护，那么借助战术设计投入软件建设就是一个值得的选择。不过，即便如此，该模型也并非核心域 —— 在业务视角下，它始终只是支撑性的。
+
+These guidelines may be somewhat confining if your business employs a good number of developers with vast experience in and a very high comfort level with domain modeling. Where experience is very high, and the engineers themselves believe the tactical patterns would be the best choice, it makes sense to trust their opinion. Honest developers, no matter how experienced, will indicate in a specific case that developing a domain model is, or is not, the best choice.
+
+如果你的企业拥有大量在领域建模方面经验极其丰富、运用得心应手的开发人员，上述指导原则可能会显得有些局限。当团队经验水平极高，且工程师自身认为采用战术模式是最优选择时，采信他们的判断是合理的。即便经验再丰富，务实的开发人员也会针对具体场景，明确指出构建领域模型是否为最佳方案。
+
+The type of business domain itself is not automatically the determining fac- tor for choosing a development approach. Your team should consider import- ant questions to help you make the final determination. Consider the following short list of more detailed decision parameters, which is more or less aligned with and expands on the preceding higher-level guidelines:
+
+- Are domain experts available and are you committed to forming a team around them?
+- Although the specific business domain is somewhat simple now, will it grow in complexity over time? There is risk in using Transaction Script1 for complex applications. If you use Transaction Script now, will the potential for refactoring to a behavioral domain model later on be practi- cal if/when the Context becomes complex?
+- Will the use of the DDD tactical patterns make it easier and more prac- tical to integrate with other Bounded Contexts, whether third-party or custom developed?
+- Will development really be simpler and require less code if you use Transaction Script? (Experience with both approaches proves that many times Transaction Script requires as much or more code. This is probably because the complexity of the domain and the innovation of the model were not well understood during project planning. Underestimating domain complexity and the innovation involved happens often.)
+- Do the critical path and timeline allow for any overhead required for tac- tical investment?
+- Will the tactical investment in a Core Domain protect the system from changing architectural influences? Transaction Script may leave it exposed. (Domain models are often enduring while architectural influences tend to be more disruptive to other layers.)
+- Will clients/customers benefit from a cleaner, enduring design and devel- opment approach, or could their application be replaced by an off-the- shelf solution tomorrow? In other words, why would we ever develop this as a custom application/service in the first place?
+- Will developing an application/service using tactical DDD be more diffi- cult than using other approaches such as Transaction Script? (Skill level and availability of domain experts is vital to answering this question.)
+- If the team’s toolkit was complete with DDD enablers, would we consci- entiously choose to use another approach instead? (Some enablers make model persistence practical, such as using object-relational mapping, full Aggregate serialization and persistence, an Event Store, or a framework that supports tactical DDD. There may be other enablers, too.)
+
+业务领域本身并非选择开发方式的绝对决定因素。你的团队应当结合关键问题来辅助做出最终决策。以下是一组更细化的决策参考指标，大致契合并进一步拓展了前述的高层指导原则：
+
+- 是否有可用的领域专家，且你是否决心围绕这些专家组建团队？
+- 即便当前具体业务领域相对简单，其复杂度未来是否会持续提升？在复杂应用中采用**事务脚本**模式存在风险。若现阶段使用事务脚本，当该限界上下文后续变得复杂时，后续重构为行为领域模型是否具备可行性？
+- 采用 DDD 战术模式，是否能更简便、更实际地与其他限界上下文（无论是第三方还是自研的）完成集成？
+- 使用事务脚本真的会让开发更简单、代码量更少吗？（两种方案的实践经验表明，很多情况下事务脚本的代码量与领域模型相当甚至更多。这大概率是因为项目规划阶段未能充分认知领域的复杂度与模型的创新性，低估领域复杂度与业务创新性是很常见的情况。）
+- 项目关键路径与时间线，是否能容纳战术设计投入所需的额外开销？
+- 对核心域进行战术设计投入，能否保护系统免受架构变更带来的冲击？（事务脚本模式可能会让系统暴露在这类风险中。领域模型通常具备长期稳定性，而架构变更往往会对其他层级造成更大的破坏性影响。）
+- 客户是否能从更清晰、更具持续性的设计与开发方案中获益，还是其应用随时可以被现成解决方案替代？换言之，我们当初究竟为何要将其开发为定制化应用 / 服务？
+- 采用 DDD 战术模式开发应用 / 服务，是否会比事务脚本等其他方案难度更高？（团队技能水平与领域专家的可用性，是回答该问题的关键。）
+- 若团队的工具集已完备配备 DDD 支撑组件，我们是否仍会审慎选择其他方案？（部分支撑组件能让模型持久化更具可行性，例如对象关系映射、完整聚合的序列化与持久化、事件存储，或是支持 DDD 战术设计的框架，此外也可能存在其他支撑组件。）
+
+
+
+
+
