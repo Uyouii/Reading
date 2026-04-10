@@ -157,6 +157,8 @@
 - [chapter3 gpu](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Real%20Time%20Rendering/chapter3%20gpu.md)
 - [real time rendering 4th](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Real%20Time%20Rendering/real%20time%20rendering%204th.md)
 ## **[<font color=#008000>大模型</font>](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B)**
+### **[<font color=#008000>blogs</font>](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/blogs)**
+- [The Illustrated Transformer](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/blogs/The%20Illustrated%20Transformer.md)
 - [roadmap](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/roadmap.md)
 ## **[<font color=#008000>开源网络库</font>](https://github.com/Uyouii/Reading/blob/master/%E5%BC%80%E6%BA%90%E7%BD%91%E7%BB%9C%E5%BA%93)**
 ### **[<font color=#008000>BBR</font>](https://github.com/Uyouii/Reading/blob/master/%E5%BC%80%E6%BA%90%E7%BD%91%E7%BB%9C%E5%BA%93/BBR)**
