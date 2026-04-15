@@ -32,3 +32,43 @@ I have something more to tell you about domains. They have both a *problem space
 - 问题空间是领域中为实现新的核心域而需要开发的部分。评估问题空间时，需要考察**已存在的子域和所需新增的子域**。因此，你的问题空间是核心域与其必须借助的子域的结合体。问题空间中的子域通常因项目而异，因为它们用于应对当前的战略性业务问题。这使得子域成为评估问题空间的一个非常实用的工具 —— 子域能让我们快速看清解决特定问题所需的领域各个不同部分。
 - 解决方案空间是一个或多个限界上下文，即一组特定的软件模型。这是因为限界上下文一旦开发完成，就是一个**具体的解决方案**、一种**实现视图**。限界上下文用于将解决方案以软件的形式落地实现。
 
+When you have a good understanding of the problem space, you then turn to the solution space. The first assessment will contribute knowledge to the second. The solution space will be strongly influenced by the existing systems and technologies, and those that are to be newly created. Here we really need to think in terms of cleanly separated Bounded Contexts because we are look- ing at the Ubiquitous Language of each. Consider these crucial questions:
+
+- What software assets already exist, and can they be reused?
+
+- What assets need to be acquired or created?
+
+- How are all of these connected to each other, or integrated?
+
+- What additional integration will be needed?
+
+- Given the existing assets and those that need to be created, what is the required effort?
+
+- Do the strategic initiative and all supporting projects have a high proba- bility of success, or will any one of them cause the overall program to be delayed or even fail?
+
+- Where are the terms of the Ubiquitous Languages involved completely different?
+
+- Where is there overlap and sharing of concepts and data between Bounded Contexts?
+
+- How are shared terms and/or overlapping concepts mapped and trans- lated between the Bounded Contexts?
+
+- Which Bounded Context contains the concepts that address the Core Domain and which of the [Evans] tactical patterns will be used to model it?
+
+Remember, the efforts in developing the solutions in the Core Domain are a key business investment!
+
+当你对**问题域**形成清晰认知后，便可转向**解决方案域**。前一阶段的评估会为后一阶段提供知识支撑。解决方案域会深受现有系统、技术以及待新建的系统与技术的影响。在此环节，我们必须基于清晰划分的**限界上下文**展开思考，因为我们需要审视每个限界上下文所对应的**通用语言**。请思考以下核心问题：
+
+- 现有哪些软件资产？其中哪些可被复用？
+- 哪些资产需要外购或全新开发？
+- 所有这些资产之间如何关联或集成？
+- 还需要补充哪些集成工作？
+- 结合现有资产与待开发资产，所需投入的工作量是多少？
+- 该战略举措及所有配套项目成功的概率是否较高？是否存在某一项目会导致整体计划延期甚至失败？
+- 各相关通用语言中的术语在哪些地方存在完全差异？
+- 不同限界上下文之间在概念与数据上存在哪些重叠与共享？
+- 共享术语及 / 或重叠概念在各限界上下文之间如何映射与转换？
+- 哪个限界上下文包含支撑**核心域**的核心概念？将采用埃文斯提出的哪些**战术模式**对其进行建模？
+
+切记，针对核心域开展解决方案研发的投入，是一项关键的商业投资！
+
+  
