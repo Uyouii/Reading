@@ -157,6 +157,10 @@
 - [chapter3 gpu](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Real%20Time%20Rendering/chapter3%20gpu.md)
 - [real time rendering 4th](https://github.com/Uyouii/Reading/blob/master/%E5%9B%BE%E5%BD%A2%E5%AD%A6/Real%20Time%20Rendering/real%20time%20rendering%204th.md)
 ## **[<font color=#008000>大模型</font>](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B)**
+### **[<font color=#008000>Hermes Agent</font>](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Hermes%20Agent)**
+- [01 Architecture](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Hermes%20Agent/01%20Architecture.md)
+- [02 Agent Loop Internals](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Hermes%20Agent/02%20Agent%20Loop%20Internals.md)
+- [03 Prompt Assembly](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Hermes%20Agent/03%20Prompt%20Assembly.md)
 ### **[<font color=#008000>blogs</font>](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/blogs)**
 - [The Illustrated Transformer](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/blogs/The%20Illustrated%20Transformer.md)
 - [roadmap](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/roadmap.md)
@@ -226,6 +230,7 @@
 - [南京大屠杀](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%8D%97%E4%BA%AC%E5%A4%A7%E5%B1%A0%E6%9D%80.md)
 - [原则：应对变化中的世界秩序](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%8E%9F%E5%88%99%EF%BC%9A%E5%BA%94%E5%AF%B9%E5%8F%98%E5%8C%96%E4%B8%AD%E7%9A%84%E4%B8%96%E7%95%8C%E7%A7%A9%E5%BA%8F.md)
 - [哲学家们都干了什么](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%93%B2%E5%AD%A6%E5%AE%B6%E4%BB%AC%E9%83%BD%E5%B9%B2%E4%BA%86%E4%BB%80%E4%B9%88.md)
+- [哲学的慰藉](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%93%B2%E5%AD%A6%E7%9A%84%E6%85%B0%E8%97%89.md)
 - [埃隆.马斯克传](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%9F%83%E9%9A%86.%E9%A9%AC%E6%96%AF%E5%85%8B%E4%BC%A0.md)
 - [天才在左 疯子在右](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%A4%A9%E6%89%8D%E5%9C%A8%E5%B7%A6%20%E7%96%AF%E5%AD%90%E5%9C%A8%E5%8F%B3.md)
 - [好好学习：个人知识管理精进指南](https://github.com/Uyouii/Reading/blob/master/%E6%96%87%E5%AD%A6/%E5%A5%BD%E5%A5%BD%E5%AD%A6%E4%B9%A0%EF%BC%9A%E4%B8%AA%E4%BA%BA%E7%9F%A5%E8%AF%86%E7%AE%A1%E7%90%86%E7%B2%BE%E8%BF%9B%E6%8C%87%E5%8D%97.md)
