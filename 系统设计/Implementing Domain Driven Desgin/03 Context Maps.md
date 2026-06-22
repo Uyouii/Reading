@@ -29,3 +29,36 @@ What are the relationships between these Bounded Contexts and their individual p
 
 
 
+#### Mapping the Three Contents
+
+This is a vital DDD project commitment. The Language of each Bounded Context must be honored in order for all models to remain pure.Linguistic segregation and a strict adherence to it help each team involved in the project to focus on their own Bounded Context and keep their vision correctly focused on their own work.
+
+这是一项至关重要的DDD（领域驱动设计）项目承诺。必须尊重每个限界上下文的语言，以便所有模型保持纯粹。语言隔离及其严格遵守有助于项目中的每个团队专注于自己的限界上下文，并使他们的视野正确地聚焦于自身的工作。
+
+![image-20260620204216302](../../images/ddd/image-20260620204216302.png)
+
+Figure 3.5. The current Core Domain is marked with a bold boundary and integration points. The CollabOvation Supporting Subdomain and IdOvation Generic Subdomain are upstream.
+
+图3.5：当前核心域以粗边界和集成点标出。CollabOvation支撑子域和IdOvation通用子域处于上游位置。
+
+This nuance serves as another visual cue. Upstream models have influences on downstream models, as activities on a river that occur upstream tend to have impacts on populations downstream, whether positive or negative. Consider pollutants dumped into a river by a large city. Those pollutants may have little impact on that city, but downstream cities may face severe consequences. The vertical proximity of models on the diagram helps identify the upstream influences on downstream models. The labels U and D explicitly call this out between each associated model. These labels make vertical positioning of each Context less important, yet it is still visually appealing to employ them.
+
+这种细微差别可作为另一种视觉提示。上游模型会对下游模型产生影响，就像河流中发生在上游的活动往往会对下游的群体产生影响一样，无论这种影响是积极的还是消极的。试想一座大城市向河中倾倒的污染物，这些污染物可能对该城市影响甚微，但下游城市却可能面临严重后果。图中模型间的垂直邻近关系有助于识别上游对下游模型的影响。标签 U 和 D 则明确标出了每个关联模型之间的这种关系。这些标签使得各上下文的垂直位置不再那么重要，但使用它们仍然在视觉上更具吸引力。
+
+On the latest Map, note the connector boxes on the upstream side of each connection. Both of the connectors are labeled OHS/PL, an abbreviation identifying Open Host Service and Published Language. All three downstream connector boxes are labeled ACL, shorthand for Anticorruption Layer. The technical implementations are covered under **Integrating Bounded Contexts** (13). Briefly, these integration patterns have these technical characteristics:
+
+在这张最新的映射图中，请注意每个连接上游一侧的连接器框。这两个连接器都标有 **OHS/PL**，这是**开放主机服务（Open Host Service）** 和**发布语言（Published Language）** 的缩写。所有三个下游连接器框都标有 **ACL**，即**防腐层（Anticorruption Layer）** 的简称。这些集成模式的技术实现在 **“集成限界上下文”（第13章）** 中详细阐述。简而言之，这些集成模式具有以下技术特征：
+
+- **Open Host Service**: This pattern can be implemented as REST-based resources that client Bounded Contexts interact with.We generally think of Open Host Service as a remote procedure call (RPC) API, but it can be implemented using message exchange.
+- **开放主机服务**：此模式可实现为基于REST的资源，供客户端限界上下文进行交互。我们通常将开放主机服务视为远程过程调用（RPC）API，但它也可以通过消息交换来实现。
+- **Published Language**: This can be implemented in a few differ ent ways but is many times done as an XML schema. When expressed with REST-based services, the Published Language is rendered as representations of domain concepts. Representations may include both XML and JSON, for example. It is also possible to render representations as Google Protocol Buffers. If you are publishing Web user interfaces, it might also include HTML representations. One advantage to using REST is that each client can specify its preferred Published Language, and the resources render representations in the requested content type. REST also has the advantage of producing hypermedia representations,which facilitates HATEOAS. Hypermedia makes a Published Language very dynamic and interactive, enabling clients to navigate to sets of linked resources. The Language may be published using standard and/or custom media types. A Published Language is also used in an Event-Driven Architecture (4), where Domain Events (8) are delivered as messages to subscribing interested parties.
+- **发布语言**：此模式可以通过几种不同方式实现，但通常以XML模式的形式呈现。在基于REST的服务中，发布语言表现为领域概念的**表示（Representations）**。表示形式可以包括，例如，XML和JSON。也可以使用Google Protocol Buffers作为表示形式。如果你发布的是Web用户界面，它也可能包含HTML表示。使用REST的一个优势是，每个客户端都可以指定其偏好的发布语言，而资源则会以所请求的内容类型呈现表示。REST还具有生成超媒体表示的优势，这有助于实现**HATEOAS**（超媒体作为应用状态引擎）。超媒体使发布语言非常动态和交互，使客户端能够导航到一系列链接的资源。发布语言可以使用标准和/或自定义媒体类型来发布。发布语言也用于**事件驱动架构（EDA）**（第4章），其中**领域事件**（第8章）作为消息传递给感兴趣的订阅方。
+- **Anticorruption Layer**: A Domain Service (7) can be defined in the downstream Context for each type of Anticorruption Layer.You may also put an Anticorruption Layer behind a Repository (12) interface. If using REST, a client Domain Service implementation accesses a remote Open Host Service. Server responses produce representations as a Published Language. The downstream Anticorruption Layer translates representations into domain objects of its local Context. This is where, for example, the Collaboration Context asks the Identity and Access Context for a User-in-Moderator-role resource. It might receive the requested resource as XML or JSON, and then translates to a Moderator,which is a Value Object. The new Moderator instance reflects a concept in terms of the downstream model, not the upstream model.
+- **防腐层**：可以在下游上下文中为每种类型的防腐层定义一个**领域服务**（第7章）。你也可以将防腐层放在**资源库**（第12章）接口之后。如果使用REST，则客户端领域服务实现会访问远程的开放主机服务。服务器响应会产生作为发布语言的表示。下游的防腐层会将这些表示转换为本地上下文的领域对象。例如，在这里，协作上下文（Collaboration Context）向身份与访问上下文（Identity and Access Context）请求一个“具有版主角色的用户”资源。它可能会以XML或JSON格式接收到所请求的资源，然后将其转换为**值对象**（Value Object）`Moderator`。这个新的`Moderator`实例体现的是下游模型中的概念，而非上游模型中的概念。
+
+
+
+
+
+
+
