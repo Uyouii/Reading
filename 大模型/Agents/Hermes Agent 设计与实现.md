@@ -19,6 +19,7 @@ Hermes 让前台完成任务，后台把经验整理为短记忆和技能；后�
 | 想了解的问题 | 阅读位置 |
 | --- | --- |
 | 模块、状态和一次任务如何串起来？ | [2. 架构与知识分层](#architecture) → [3. 运行与上下文](#runtime) |
+| 模型请求长什么样，如何规范化返回？ | [3.4 请求格式](#model-request)、[3.5 返回处理](#model-output) |
 | USER.md、MEMORY.md、SKILL.md 长什么样？ | [4.1 记忆格式](#memory-format)、[5.2 技能结构](#skill-format)、[5.3 完整示例](#skill-example) |
 | 何时自动学习，后台具体做什么？ | [6. 自动学习](#learning) |
 | 如何避免技能越积越多，能否合并和恢复？ | [5.5 技能库治理](#skill-curator)、[5.6 使用记录与恢复](#skill-observability) |
@@ -121,9 +122,162 @@ flowchart TB
 
 关键行为提示的英文节选见 [附录 A](#prompts)。
 
+<a id="model-request"></a>
+
+### 3.4 请求模型时，Prompt 到底是什么格式
+
+要区分 **系统提示的文本内容、消息列表、provider 的 API 请求体**。`stable / context / volatile` 是 Hermes 的拼装与缓存分层，并不是三个 API role，也不会默认作为三个同名 JSON 字段直接发给模型。
+
+系统提示最终按顺序用空行拼成字符串，里面混合自然语言规则、Markdown、工作区文件正文与记忆区块。下面是形状示意，方括号为解释性占位符；不是完整 Prompt 原文：
+
+```text
+[SOUL.md 或默认身份，以及按工具/模型选择的行为规则]
+
+[环境与工作区背景、调用方 system_message、上下文文件]
+
+[可用技能索引]
+
+══════════════════════════════════════════════
+MEMORY (your personal notes) [用量]
+══════════════════════════════════════════════
+[已冻结的长期记忆条目]
+
+══════════════════════════════════════════════
+USER PROFILE (who the user is) [用量]
+══════════════════════════════════════════════
+[已冻结的用户信息条目]
+
+[插件片段、日期及时区等]
+```
+
+空记忆区块会省略；技能、Memory 和日期来自提示构建时的快照。区块标题帮助模型理解内容，但没有把整个 Prompt 强制成 XML 或 JSON。[分层与字符串拼接](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/system_prompt.py#L581-L650)、[记忆区块渲染](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool_store.py#L345-L352)
+
+**内部历史主要采用 OpenAI 风格的消息字典**：`system / user / assistant / tool`。发送前生成请求副本，处理临时提示、历史调用配对、参数回放、缓存标记及需要剔除的内部元信息；保存的 transcript 与实际 API payload 不能混为一谈。[请求副本](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_context.py#L917-L1003)、[发送前组装](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_request_assembly.py#L110-L194)
+
+以下为普通 Chat Completions 路径的精简首个请求。`read_file` 和 `path` 来自真实工具；说明与可选参数缩减，模型名为占位符，不是抓包：
+
+```json
+{
+  "model": "example-model",
+  "messages": [
+    { "role": "system", "content": "[stable 文本]\n\n[context 文本]\n\n[volatile 文本]" },
+    { "role": "user", "content": "读取 README.md 并总结。" }
+  ],
+  "tools": [{
+    "type": "function",
+    "function": {
+      "name": "read_file",
+      "description": "Read a text file with line numbers and pagination.",
+      "parameters": {
+        "type": "object",
+        "properties": { "path": { "type": "string" } },
+        "required": ["path"]
+      }
+    }
+  }]
+}
+```
+
+实际 transport 再按配置加入输出预算、temperature、reasoning、流式等字段。工具 schema 是独立的 `tools` 参数，不只是贴在 system 中的一段说明，也不是最终答案的 schema。[请求骨架与选项](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/chat_completions.py#L263-L367)、[read_file 定义](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/file_tools.py#L966-L985)
+
+一次调用与返回的消息往返可简化为：
+
+```json
+[
+  {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [{
+      "id": "call_example_1",
+      "type": "function",
+      "function": { "name": "read_file", "arguments": "{\"path\":\"README.md\"}" }
+    }]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_example_1",
+    "name": "read_file",
+    "content": "1|# Example\n2|A demo project."
+  },
+  { "role": "assistant", "content": "README 介绍了这个示例项目。" }
+]
+```
+
+`arguments` 是 JSON 对象编码成的**字符串**；工具结果的 content 这里用简化文本表示，真实工具也可能返回序列化 JSON 或多模态内容。下一次请求带上前两条后，才由模型产生最后一条答复；宿主不会预写该答案。外层 JSON 传输与正文自然语言并不冲突。[模型响应转换](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/chat_completions.py#L488-L547)、[工具结果接回历史](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/tool_executor.py#L990-L1014)
+
+| 内容 | Chat Completions | Anthropic Messages | Hermes 的 Responses 路径 |
+| --- | --- | --- | --- |
+| 系统提示 | `messages` 中 system；部分路由转 developer | 顶层 `system` | 顶层 `instructions` |
+| 对话 | `messages` | `messages` 内容块 | `input` 消息 / 调用 items |
+| 工具定义 | `type:function` + `function` 包装 | name / description / `input_schema` | `type:function` 与 name / description / parameters 同层；转换器写 `strict:false` |
+| 模型工具调用 | `tool_calls`，arguments 为字符串 | `tool_use`，input 为对象 | `function_call`，arguments 为字符串，带 call_id |
+| 工具结果 | `role:tool` + tool_call_id | user 内容中的 `tool_result` + tool_use_id | `function_call_output` + call_id |
+
+这些转换由 transport / adapter 完成，不靠 Prompt 要求模型模仿另一家协议；signed thinking、reasoning items 与 provider ids 也有专门回放逻辑。表格描述本快照的 Hermes 路径，不代表所有第三方兼容端点完全相同。[Anthropic 请求](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/anthropic.py#L36-L102)、[Anthropic 工具结果](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/anthropic_message_convert.py#L443-L456)、[Responses 组装](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/codex.py#L439-L520)、[Responses 工具格式](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/codex_responses_adapter.py#L282-L292)、[Responses 历史调用](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/codex_responses_adapter.py#L372-L407)
+
+<a id="model-output"></a>
+
+### 3.5 返回如何规范化：统一形状、工具纠错与文本收尾
+
+Hermes 的常规前台循环没有要求所有最终答案都满足一个 JSON Schema。它主要统一 provider 响应的**程序结构**，再对工具调用和结束条件分别处理；用户看到的答复通常仍是自然语言或 Markdown。
+
+各 transport 先检查自己的响应外壳，再转成 `NormalizedResponse(content, tool_calls, finish_reason, reasoning, usage, provider_data)`。其中 `ToolCall` 统一为 id / name / arguments，arguments 保持 JSON 字符串；provider 特有的签名和回放信息放在 `provider_data`。这让循环不用为每种 provider 重写一套业务逻辑，却不意味着返回正文已经通过事实或格式审查。[协议检查](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_response_check.py#L123-L181)、[统一响应类型](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/types.py#L15-L87)
+
+**工具回合的合法性不只靠 Prompt。** 在模型生成工具调用后，程序会检查工具名、调用 id、参数 JSON 和实际执行入口；错误通过对应调用的工具结果回传，让模型继续修正，而不是把错误伪装成新的用户指令。
+
+| 检查 / 修复 | 实际行为 | 不应误解为 |
+| --- | --- | --- |
+| 响应文本形状 | provider 返回 dict / list 时提取文本，避免下游把非字符串直接 `.strip()` | 所有多模态信息都可以用字符串无损表示。 |
+| 工具名和调用 id | 对齐当前可用工具名，修复部分名称偏差，并去除重复 id 冲突 | 名称猜测可以增加新工具权限。 |
+| 参数 JSON | 空参数归一为 `{}`；处理已有对象和字符串，检查 JSON 是否可解析 | JSON 可解析就已经满足所有参数约束。 |
+| 未知工具 | 混合批次仅错误调用失败，有效调用可继续；整批无有效工具时累计错误并有限退出 | 一个坏工具名必然取消整个批次。 |
+| 非法 / 截断参数 | 非法 JSON 可重试并回传错误；识别出的截断参数拒绝执行 | 自动补齐任意缺失参数后照常执行。 |
+| 文本结束 | 空内容、仅思考块、截断等走各自恢复分支；通过 stop gates 才保存最终答复 | 出现一段 assistant 文本就代表任务完成。 |
+
+[文本类型归一](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_response_intake.py#L35-L50)、[工具名与 id](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_tool_validation.py#L67-L136)、[参数与截断](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_tool_validation.py#L140-L208)、[最终答复入口](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_final_response.py#L46-L97)、[stop gates](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_final_response.py#L214-L230)
+
+**参数校验分路径，不能笼统称为全量 JSON Schema 验证。** executor 会要求工具参数解析后为对象；常规 dispatch 还有按工具 schema 指导的类型修复，例如数字字符串转数字、JSON 编码的数组或对象还原，之后由 handler 检查实际参数。Tool Search 的通用 `tool_call` 桥接另查 required 和可选的 `jsonschema`；缺校验库、外部引用等情况有降级处理，不是所有工具共享一个无条件严格校验器。[对象要求](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/tool_executor.py#L147-L158)、[分发前类型修复](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/model_tools.py#L817-L879)、[转换规则](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/arg_coercion.py#L20-L80)、[deferred 校验边界](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/tool_search_validation.py#L73-L135)
+
+参数修复也有不同用途：流式拼装可尝试修复部分 JSON 语法；历史消息的**发送副本**还会清理参数以满足 API 回放要求。后者不表示把过去失败的调用重新拿来执行。未能修复的错误仍要走拒绝、重试或错误结果路径。[流式参数修复](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/chat_completion_helpers.py#L3047-L3111)、[历史发送修复](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/message_sanitization.py#L130-L182)、[副本与原记录](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/conversation_loop.py#L889-L920)
+
+**用户可见文本经过清理，但没有统一排版验收器。** 最终路径会剥离思考标签、部分泄漏的独立工具 XML，并处理输出 hook 和 Unicode 等；这种清洗不把正文里的 XML 自动变成可执行工具，也不能证明答复满足所有语言、风格或业务要求。`run_conversation()` 最后返回的 `final_response / messages / completed / failed` 等 dict 字段是宿主组装的结果外壳，不是让模型原样生成的 JSON。[文本清洗](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/agent_runtime_helpers.py#L626-L634)、[最终收尾](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_finalizer.py#L495-L560)
+
+**明确需要结构化结果时，有专用入口。** 插件的 `ctx.llm.complete_structured / acomplete_structured` 可指定 `json_mode` 或 `json_schema`，同时采用提示、API 参数和本地解析：
+
+| 约束层 | 实现 | 失败边界 |
+| --- | --- | --- |
+| Prompt | 要求单个 JSON object，禁止额外正文和 Markdown 围栏 | 模型可能不遵守。 |
+| API 参数 | json_mode 用 `response_format.type=json_object`；json_schema 用 `json_schema`，该入口设 `strict:false` | 辅助客户端识别到 provider 拒绝格式参数时，可移除该参数重试。 |
+| 本地解析 | 提取代码围栏正文后 `json.loads` | JSON 语法失败返回 `parsed=None, content_type="text"`，不会在此处自动重新生成。 |
+| schema 校验 | 提供 schema 且安装 `jsonschema` 时验证 | 不符合会抛错；缺库则跳过 schema 校验。 |
+
+[结构化提示与解析](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/plugin_llm.py#L276-L334)、[格式参数](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/plugin_llm.py#L403-L411)、[插件接口](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/plugin_llm.py#L460-L496)、[不支持格式的错误识别](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/auxiliary_client.py#L3096-L3129)、[移除格式约束后重试](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/auxiliary_client.py#L6654-L6664)
+
+例如该接口附加的格式参数可形如下面这样；这只是请求中的局部约束，不是普通前台默认值：
+
+```json
+{
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "plugin_structured_output",
+      "strict": false,
+      "schema": {
+        "type": "object",
+        "properties": { "summary": { "type": "string" } },
+        "required": ["summary"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+自动标题是另一个专用例子：请求使用 `strict:true` 的 title schema，但本地仍保留 JSON 提取和首行文本兜底。由此可见，请求侧的结构约束、返回后的可解析性、业务意义正确性要分别验证。[标题 schema](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/title_generator.py#L66-L71)、[标题请求](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/title_generator.py#L263-L281)、[标题提取与兜底](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/title_generator.py#L179-L204)
+
 <a id="context-budget"></a>
 
-### 3.4 上下文预算与压缩阈值
+### 3.6 上下文预算与压缩阈值
 
 触发点以 **`(模型窗口 − max_tokens) × 比例`** 为基础，再应用最小阈值保护和可选绝对上限；用量优先取 API 返回值，缺失时估算。无额外限制时，128K 窗口、16K 输出预留、75% 比例约对应 84K tokens。[阈值计算实现](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L2204-L2253)
 
@@ -142,7 +296,7 @@ flowchart TB
 
 <a id="context-compaction"></a>
 
-### 3.5 压缩后留下什么，失败后如何继续
+### 3.7 压缩后留下什么，失败后如何继续
 
 压缩先清理旧工具结果与空消息，再总结中段、补充机械索引并修复工具调用配对。[压缩主流程](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L4578-L4655)
 
@@ -160,7 +314,7 @@ flowchart TB
 
 <a id="history-recovery"></a>
 
-### 3.6 工具卸载与历史查询的恢复边界
+### 3.8 工具卸载与历史查询的恢复边界
 
 | 机制 | 默认限额与返回 | 失败或持久化边界 |
 | --- | --- | --- |
@@ -876,7 +1030,7 @@ PRESERVE EXACTLY: PR/issue numbers, file paths, function/symbol names, commands,
 messages, SHAs, URLs, version numbers, counts. Never paraphrase an identifier.
 ```
 
-**Skill 提炼与会话压缩需要保留的内容不同。** Skill 抽取未来可重复使用的规则，通常去掉事件编号；会话摘要要支持继续工作和追查证据，因此需要保留路径、命令、错误等精确细节。凭证脱敏是对精确保留的明确例外；压缩与恢复的运行边界见 [3.5–3.6](#context-compaction)。[摘要角色与增量更新](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L3306-L3361)、[摘要结构](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L3380-L3440)、[精确日志要求](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L848-L859)
+**Skill 提炼与会话压缩需要保留的内容不同。** Skill 抽取未来可重复使用的规则，通常去掉事件编号；会话摘要要支持继续工作和追查证据，因此需要保留路径、命令、错误等精确细节。凭证脱敏是对精确保留的明确例外；压缩与恢复的运行边界见 [3.7–3.8](#context-compaction)。[摘要角色与增量更新](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L3306-L3361)、[摘要结构](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L3380-L3440)、[精确日志要求](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L848-L859)
 
 摘要回到主会话后，`SUMMARY_PREFIX` 再强调如何使用这份历史记录：
 
@@ -926,9 +1080,11 @@ before adding).
 | --- | --- | --- |
 | 1 | [回合门面](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_facade.py#L19-L49) → [主循环](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/conversation_loop.py#L1390-L1530) | 输入进入后，哪些分支继续、结束或直接返回。 |
 | 2 | [工具回合](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_tool_round.py#L120-L160) → [分段执行](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/run_agent.py#L1272-L1295) | 工具调用、持久化记录和并发顺序如何保持对应。 |
-| 3 | [结果卸载](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/tool_result_storage.py#L192-L230) → [上下文压缩](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L4578-L4655) | 即时输出限制与长期会话压缩各自处理什么。 |
-| 4 | [记忆存储](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool_store.py#L66-L212) → [提示刷新](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/system_prompt.py#L650-L668) | 磁盘实时状态与模型可见快照何时汇合。 |
-| 5 | [复盘启动条件](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_finalizer.py#L587-L616) → [复盘实例](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/background_review.py#L825-L856) | 学习触发、共享知识与隔离会话如何同时成立。 |
-| 6 | [整理器](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/curator.py#L877-L910)、[委派](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/delegate_tool.py#L175-L188)、[定时 Agent](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/cron/scheduler.py#L2229-L2263) | 如何复用同一运行内核，同时改变预算、知识和交付边界。 |
+| 3 | [模型请求组装](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_request_assembly.py) → [Chat transport](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/chat_completions.py) / [Anthropic](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/anthropic.py) / [Responses](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/codex.py) | 系统提示、历史和工具 schema 怎样映射成不同协议。 |
+| 4 | [统一响应类型](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/transports/types.py) → [工具校验](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_tool_validation.py) → [最终答复](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_final_response.py)；[插件结构化输出](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/plugin_llm.py) | 协议归一、参数检查、文本处理与专用 schema 的范围。 |
+| 5 | [结果卸载](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/tool_result_storage.py#L192-L230) → [上下文压缩](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/context_compressor.py#L4578-L4655) | 即时输出限制与长期会话压缩各自处理什么。 |
+| 6 | [记忆存储](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool_store.py#L66-L212) → [提示刷新](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/system_prompt.py#L650-L668) | 磁盘实时状态与模型可见快照何时汇合。 |
+| 7 | [复盘启动条件](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/turn_finalizer.py#L587-L616) → [复盘实例](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/background_review.py#L825-L856) | 学习触发、共享知识与隔离会话如何同时成立。 |
+| 8 | [整理器](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/curator.py#L877-L910)、[委派](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/delegate_tool.py#L175-L188)、[定时 Agent](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/cron/scheduler.py#L2229-L2263) | 如何复用同一运行内核，同时改变预算、知识和交付边界。 |
 
 本次核查到的是学习、记忆、压缩和调度机制的实现。复盘能否稳定产出有效技能、摘要丢失细节的概率、附件清理对长期恢复的实际影响，以及各外部记忆插件的表现，仍需要配套任务集和真实运行数据验证。
