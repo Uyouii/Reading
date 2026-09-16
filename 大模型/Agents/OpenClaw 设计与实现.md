@@ -20,6 +20,7 @@ OpenClaw 是围绕 **Gateway、会话和 Agent 工作区** 组织的长期助理
 | --- | --- |
 | Gateway、会话、运行时和工作区各负责什么？ | [2. 架构与状态分层](#architecture) |
 | 一次任务如何执行，长上下文如何维持？ | [3. 运行与上下文](#runtime) |
+| 模型请求长什么样，如何规范化返回？ | [3.4 请求格式](#model-request)、[3.5 返回处理](#model-output) |
 | USER.md、MEMORY.md、日记是什么格式，如何召回？ | [4. Memory](#memory) |
 | SKILL.md 长什么样，如何更新和避免技能膨胀？ | [5. Skill](#skills) |
 | Dreaming 和 Workshop 何时自动运行，谁决定写什么？ | [6. 自动学习](#learning) |
@@ -134,9 +135,162 @@ flowchart TB
 
 工作区注入默认单文件最多 20,000 字符、总计 60,000 字符；`USER.md` 还有 4,000 字符上限，实际还受更低单文件配置和总预算约束。它们限制的是**注入副本**，不是文件写入大小。缺失的可选 `USER.md` / `MEMORY.md` 会省略；子 Agent、cron、群聊和 channel 会话排除根 `MEMORY.md`，子 Agent 与 cron 再经过文件白名单。[注入预算](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-helpers/bootstrap.ts#L89-L93)、[USER 特殊上限](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/bootstrap-budget.ts#L45-L60)、[加载与缺失处理](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/workspace.ts#L1275-L1308)、[会话过滤](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/workspace.ts#L1379-L1400)
 
+<a id="model-request"></a>
+
+### 3.4 请求模型时，Prompt 到底是什么格式
+
+要区分 **Prompt 正文、内部 Context、provider 的 API 请求**。第 3.3 节描述哪些信息进入提示；这里展开它们怎样编码。以下以内置 `openclaw` 路径为主，插件原生 runtime 不保证采用相同请求体。
+
+**Prompt 正文主要是普通文本和 Markdown，局部嵌入 XML 风格的技能目录。** 下面是省略其他规则后的形状示意；方括号为说明性占位符，不是固定 Prompt 原文：
+
+```text
+You are a personal assistant running inside OpenClaw.
+
+## Tooling
+[当前工具与调用规则]
+
+## Skills
+[技能选择规则]
+<available_skills>
+  <skill>
+    <name>project-integration-tests</name>
+    <description>[触发场景]</description>
+    <location>[实际 SKILL.md 路径]</location>
+  </skill>
+</available_skills>
+
+# Project Context
+Loaded project context:
+## [工作区文件路径]
+[通过资格检查与预算处理的文件内容]
+
+[日期、时区、频道等动态信息]
+```
+
+Markdown 标题和 XML 标签给模型划分内容，不是把整份提示变成必须通过 XML parser 的文档，也不等于新的消息 role。工具参数 schema 另经 `tools` 字段发送，不能用这段工具说明替代。[正文拼接](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/system-prompt.ts#L1183-L1203)、[文件包装](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/system-prompt.ts#L211-L237)、[技能目录格式](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/skills/loading/skill-contract.ts#L101-L128)
+
+**内部 Context 是结构化对象，发出去前再转换协议。** 内核先处理 `AgentMessage[]`，经过可选 `transformContext`、消息规范化和 `convertToLlm`，构成 `{systemPrompt, messages, tools}`，再交给 stream function。内部消息包括 `user / assistant / toolResult`；harness 还会把合格的执行记录、分支摘要、压缩摘要转换为可供模型读取的消息。执行函数、统计字段和内部记录不能直接当作 HTTP body。[调用链](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/agent-core/src/agent-stream-response.ts#L132-L152)、[Context 类型](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/llm-core/src/types.ts#L461-L472)、[历史转换](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/agent-core/src/harness/messages.ts#L133-L197)
+
+| 内容 | Chat Completions | Responses | Anthropic Messages |
+| --- | --- | --- | --- |
+| 系统提示 | `messages` 中 `system`；部分 reasoning 路由使用 `developer` | 按入口和端点能力放顶层 `instructions`，或 `input` 中的 system / developer 消息 | 顶层 `system` 文本块 |
+| 用户与历史 | `messages` | `input` 的消息 / 调用 items | `messages` 的内容块 |
+| 工具定义 | `tools[].function.{name,description,parameters}` | `tools[]` 的 `type:function` 与 name / description / parameters 同层 | `tools[].{name,description,input_schema}` |
+| 模型工具调用 | `assistant.tool_calls`，arguments 是 JSON 字符串 | `function_call`，arguments 是 JSON 字符串，带 call_id | `tool_use`，input 是对象，带 id |
+| 工具结果 | `role:tool`，tool_call_id 配对 | `function_call_output`，call_id 配对 | user 内容里的 `tool_result`，tool_use_id 配对 |
+
+[Chat 消息转换](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/openai-completions-messages.ts#L82-L153)、[Chat 工具往返](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/openai-completions-messages.ts#L202-L269)、[Responses 外层](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-params-internal.ts#L223-L277)、[Responses 工具声明](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/providers/openai-responses-tools.ts#L69-L85)、[Responses 调用与结果](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-replay-messages-internal.ts#L478-L574)、[Anthropic 工具往返](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/anthropic-messages.ts#L286-L341)、[Anthropic 工具声明](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/anthropic-messages.ts#L444-L470)、[Anthropic 外层](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/anthropic-transport-stream.ts#L554-L631)
+
+Responses 不能统一写死为 `instructions`：managed transport 判断端点及 `compat.supportsInstructions`，另有直接 provider 路径默认把 system 放入 input。[端点策略](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-payload-policy.ts#L129-L153)、[显式能力覆盖](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-payload-policy.ts#L321-L325)、[直接 provider 入口](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/providers/openai-responses.ts#L143-L161)、[system 消息映射](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-replay-messages-internal.ts#L348-L366)
+
+下面示意**一次文件读取完成后的下一次 Chat Completions 请求**。工具名采用 `read`，说明和 schema 为缩减样例；省略缓存、预算及 provider 特有字段，不是实际抓包：
+
+```json
+{
+  "model": "example-chat-model",
+  "stream": true,
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a personal assistant running inside OpenClaw.\n\n## Tooling\n[其余已拼装提示]"
+    },
+    { "role": "user", "content": "读取 README.md 并总结。" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [{
+        "id": "call_example_1",
+        "type": "function",
+        "function": { "name": "read", "arguments": "{\"path\":\"README.md\"}" }
+      }]
+    },
+    { "role": "tool", "tool_call_id": "call_example_1", "content": "# Demo\nA small demo project." }
+  ],
+  "tools": [{
+    "type": "function",
+    "function": {
+      "name": "read",
+      "description": "Read a text file.",
+      "parameters": {
+        "type": "object",
+        "properties": { "path": { "type": "string" } },
+        "required": ["path"]
+      }
+    }
+  }]
+}
+```
+
+首次请求还没有这两条 assistant / tool 历史；工具完成后追加它们，再让模型据结果回答。**HTTP 请求是 JSON，不等于要求答案正文是 JSON。** `parameters` 约束工具输入，arguments 的字符串编码是协议要求，均不规定最终总结的写法。[请求构造](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-completions-params.ts#L258-L309)、[请求骨架](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-completions-params.ts#L374-L410)
+
+图片也不是简单把本地路径塞进文字：适配器把图片内容转换为各协议的 `image_url / input_image / image.source`，并受模型能力及图片过滤设置影响。缓存标记、provider 推理签名和回放信息按专门规则处理；timestamp、usage、toolResult.details 等内部字段不会原样混进上述对话消息。[图片转换](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/openai-completions-messages.ts#L271-L297)、[Anthropic 图片块](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/anthropic-messages.ts#L182-L195)、[图片过滤](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/sessions/sdk.ts#L399-L430)、[推理回放](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-replay-messages-internal.ts#L439-L477)、[缓存块](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/anthropic-payload-policy.ts#L194-L251)
+
+<a id="model-output"></a>
+
+### 3.5 返回如何规范化：协议、工具参数与最终答复
+
+OpenClaw 没有把所有模型回复统一变成某个业务 JSON。内置路径先把不同 provider 的返回归一成消息与事件，再分别处理工具调用、用户可见文字和专用结构化任务；“格式合法”“可以执行”“内容正确”是三个不同判断。
+
+**第一层：统一运行时消息。** 不同协议的响应收敛为 `AssistantMessage`：正文是 `text / thinking / toolCall` 内容块，另存模型标识、usage、stopReason、错误和可选的 `endTurn`。流式输出统一成 `text_delta`、`thinking_delta`、`toolcall_delta` 等事件，最后以 `done` 或 `error` 收口。[消息契约](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/llm-core/src/types.ts#L303-L314)、[回复与工具结果](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/llm-core/src/types.ts#L355-L430)、[事件契约](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/llm-core/src/types.ts#L475-L503)
+
+例如，一次工具调用在内部的关键字段如下。这里是**规范化结构投影**，省略 usage、时间等字段，不是 provider 原始 HTTP 响应：
+
+```json
+{
+  "role": "assistant",
+  "content": [
+    {
+      "type": "toolCall",
+      "id": "call_example_1",
+      "name": "read",
+      "arguments": { "path": "README.md", "limit": 20 }
+    }
+  ],
+  "stopReason": "toolUse"
+}
+```
+
+工具结果通过同一个 id 接回历史，例如 `role: "toolResult"`、`toolCallId: "call_example_1"`、`content: [{type:"text", text:"…"}]`、`isError: false`；下一次请求再转换成目标 provider 的格式。[结果消息构造](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/agent-core/src/agent-loop.ts#L1614-L1639)
+
+**第二层：解析完成之后才校验与执行工具。**
+
+| 环节 | 程序做什么 | 边界 |
+| --- | --- | --- |
+| 流式拼接 | 累积参数字符串；不完整 JSON 可生成预览对象 | 预览不代表已经取得可执行参数。 |
+| 终态解析 | 主要 transport 要求完整 object-shaped 参数；特定路径可修复字符串转义 | 截断或非对象数据不能因为预览曾返回 `{}` 就执行。 |
+| 名称与 id | 在当前可调用集合内解析名称别名、空白等；为缺失或重复 id 分配稳定替代值 | 不凭空创造工具能力。 |
+| 有限兼容修复 | 特定 provider/API 修复畸形参数；独立的文本工具调用可在受限条件下转结构块 | 有代码区域保护和允许工具集合检查，不等于执行正文中的任意代码示例。 |
+| 参数校验 | 可先调用工具 `prepareArguments`；再按 TypeBox / JSON Schema 做类型转换与校验 | 例如 schema 要数字时可尝试把数字字符串转成数字；这不同于完全不转换的严格拒绝。 |
+| 校验失败 | 返回带错误信息的 `toolResult`，供模型纠正；错误调用不执行 | 模型仍可能反复出错，循环保护和运行预算另行限制。 |
+
+[预览解析](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/utils/json-parse.ts#L135-L173)、[终态解析](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/transport-stream-shared.ts#L120-L171)、[Chat 接入](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/providers/openai-completions-tool-calls.ts#L277-L293)、[Responses 接入](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-stream-terminal-internal.ts#L88-L112)、[Anthropic 接入](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/anthropic-stream-reducer.ts#L624-L637)、[名称与 id](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/attempt-tool-call-stream-normalization.ts#L28-L153)、[兼容层安装](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/attempt-stream.ts#L292-L325)、[文本调用保护](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/attempt-tool-call-text-promotion.ts#L30-L99)、[参数预处理](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/agent-core/src/agent-loop.ts#L1017-L1029)、[类型转换与验证](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/llm-core/src/validation.ts#L364-L405)、[拒绝分支](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/agent-core/src/agent-loop.ts#L1134-L1180)
+
+即使 schema 通过，实际操作仍受运行权限、工具策略、审批和工具自身业务检查控制。JSON 参数正确不代表文件存在、命令有效或当前允许执行；工具的返回值也不等于模型的最终答复。
+
+**第三层：把可见文本和交付控制信息分开。** 最终路径优先选取标为 `final_answer` 的文本，按场景清理模型控制 token、思考标签与工具调用残片；普通 delivery 与已经确定为 final 的正文使用不同清理规则，代码区里的字面示例也有保护。reasoning 若被显式配置展示，可作为单独 payload，不能说成“所有推理永远被删除”。[最终文字选择](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/payloads.ts#L63-L117)、[可见文本清理](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/shared/text/assistant-visible-text.ts#L750-L844)、[独立 reasoning](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/payloads.ts#L258-L266)
+
+`[[reply_to_current]]`、`MEDIA:`、`NO_REPLY` 等还会经过 parser：提取回复目标、媒体和静默状态，形成 `ReplyPayload`，而不是原样转发。例如普通回复 `[[reply_to_current]] 完成。` 可以拆成正文“完成。”与回复元数据；代码围栏中的示例应保留为文字。解析出媒体地址并不代表文件存在或已经发送成功。[回复指令解析](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/auto-reply/reply/reply-directives.ts#L29-L64)、[标记与代码区保护](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/utils/directive-tags.ts#L119-L205)、[媒体解析边界](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/media/parse-output.ts#L557-L562)、[空 payload 过滤](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/payloads.ts#L510-L528)
+
+**第四层：未产生可见答案时有限补答。** 默认 reasoning-only 最多续行 2 次、empty-response 最多 1 次，但受 provider、终态、审批、异步任务等资格限制，不是任意空串都重试。工具已经结算却没有最终答复时，可进入独立 text-only finalization；运行时设置 `disableTools:true` 并校验返回只能是合格文本答复，避免通过重跑工具补答案。这是完成性检查，不是答案事实校验。[补答预算](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/incomplete-turn-recovery.ts#L32-L43)、[通用与推理续行资格](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/incomplete-turn-recovery.ts#L103-L204)、[工具收尾与空回复资格](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/incomplete-turn-recovery.ts#L328-L448)、[禁用工具](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/settled-turn-finalization.ts#L416-L430)、[补答结果契约](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/harness/settled-turn-finalization-result.ts#L10-L123)
+
+**专用结构化任务有自己的规则，不能把它们推广到所有回复。**
+
+| 场景 | 预期输出 | 实际校验与失败处理 |
+| --- | --- | --- |
+| 普通用户答复 | 自然语言 / Markdown，或用户请求的格式 | 可见文本、交付和完成性处理；没有默认通用业务 JSON schema。 |
+| Dreaming Deep | `{"operations":[...]}` | `JSON.parse` + candidate / action / 原文 / project / lineage 等领域检查；无效则放弃模型计划、走追加回退，不以宽松语义改写放行。 |
+| Compaction safeguard | 五个固定标题的 Markdown | 检查章节、有限标识符与未解决请求；默认额外返修一次，仍不合格则取消压缩、保留历史。 |
+| 启用 swarm 的 collector 子任务 | `collect:true` + `outputSchema` 指定的结果 | 用 `structured_output({"result": ...})` 提交；runtime 校验 schema，首次失败可改正一次，未取得有效提交会使原本 done 的收集结果变成 failed。 |
+
+[Dreaming parser](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/extensions/memory-core/src/dreaming-consolidation.ts#L89-L132)、[领域检查](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/extensions/memory-core/src/dreaming-consolidation.ts#L211-L288)、[无效计划回退](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/extensions/memory-core/src/dreaming-consolidation.ts#L441-L487)、[摘要检查](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/agent-hooks/compaction-safeguard-quality.ts#L471-L526)、[默认返修次数](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/agent-hooks/compaction-safeguard.ts#L88-L90)、[摘要失败处理](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/agent-hooks/compaction-safeguard.ts#L1386-L1444)、[collector 前置条件](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/subagents/spawn/subagent-spawn-request.ts#L205-L224)、[结构化提交工具](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/tools/structured-output-tool.ts#L30-L108)、[完成时核验](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/subagents/swarm/swarm-collector.ts#L45-L69)
+
+collector 的 schema 校验是代码执行的，不是只要求模型“请输出 JSON”；不过部分 `format` 注解并不做完整语义检查。模型只在 final 里写一段像 JSON 的正文，也不等于调用了结构化提交工具。[format 名称范围](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/plugins/schema-validator.ts#L35-L57)、[format 处理策略](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/plugins/schema-validator.ts#L134-L147)、[schema 执行](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/plugins/schema-validator.ts#L393-L454)
+
+另外，模型调用可显式传 `responseFormat`：Chat Completions 映射为 `response_format`，Responses managed transport 映射为 `text.format`。这是**可选的远端格式约束**，不是默认开启，也不能替代上述本地或领域校验；原始 schema 自动包装、预成形格式透传及 Ollama 等兼容策略各有分支，不存在一个所有 provider 都一样的 strict 开关。[Chat 格式选项](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/providers/openai-response-format.ts#L21-L68)、[Chat 参数接入](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-completions-params.ts#L395-L410)、[Responses 格式映射](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-params-internal.ts#L206-L221)、[Responses 参数接入](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/openai-responses-params-internal.ts#L290-L295)
+
 <a id="context-maintenance"></a>
 
-### 3.4 Pruning、memory flush、compaction 各做什么
+### 3.6 Pruning、memory flush、compaction 各做什么
 
 | 动作 | 目的 | 产物与触发 |
 | --- | --- | --- |
@@ -148,7 +302,7 @@ flowchart TB
 
 **维护时机分为必要和可选两类。** 内置运行时需要的检查点和压缩在推理前完成；持久 Gateway 会话的可选 flush / compaction 等回复交付结算且前台 owner 关闭后，以独立 owner 和剩余时间运行。新消息先取消并等待这些维护结束，再读取会话。单次 `--local` 跳过可选尾部维护；原生 runtime 和通用 CLI 后端各有自己的策略。[维护时机](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/docs/concepts/compaction.md#L37-L51)、[独立维护生命周期](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/context-engine-maintenance.ts#L354-L399)
 
-### 3.5 预算、摘要质量与恢复边界
+### 3.7 预算、摘要质量与恢复边界
 
 | 项目 | 当前默认或规则 | 实际含义 |
 | --- | --- | --- |
@@ -938,6 +1092,8 @@ Use heartbeat_respond to report the wake outcome. Set notify=false when nothing 
 | 队列、执行与维护 | [run-orchestrator.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run-orchestrator.ts) | session/global lanes → [context-engine-maintenance.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/context-engine-maintenance.ts)。 |
 | 内置模型循环 | [agent-loop.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/agent-core/src/agent-loop.ts) | 工具批次、续行、steer 与 agent_end。 |
 | 系统提示和工作区 | [system-prompt.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/system-prompt.ts) | [workspace.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/workspace.ts)、bootstrap 文件筛选与预算。 |
+| 模型请求与协议 | [agent-stream-response.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/agent-core/src/agent-stream-response.ts) | [统一 Context](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/llm-core/src/types.ts) → [provider transport](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/ai/src/transports/provider-transport-stream.ts) → 各协议 payload。 |
+| 返回规范化与结构化结果 | [工具参数验证](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/packages/llm-core/src/validation.ts) → [回复 payload](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/embedded-agent-runner/run/payloads.ts) | 流式终态、工具调用、可见文本；[structured_output](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/tools/structured-output-tool.ts) 的局部业务契约。 |
 | 上下文整理 | [compaction-safeguard.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/agent-hooks/compaction-safeguard.ts) | [质量检查](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/agent-hooks/compaction-safeguard-quality.ts)、[flush-plan.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/extensions/memory-core/src/flush-plan.ts)。 |
 | 记忆工具与排序 | [memory-tool-contract.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/extensions/memory-core/src/memory-tool-contract.ts) | [配置默认值](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/src/agents/memory-search.ts)、[hybrid.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/extensions/memory-core/src/memory/hybrid.ts)。 |
 | 自动召回 | [active-memory/index.ts](https://github.com/openclaw/openclaw/blob/cf6f6d926fd8a6feed1dd66438733d261f0d888e/extensions/active-memory/index.ts) | trigger-recall → escalation → recall-run → prompt。 |
