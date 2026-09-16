@@ -2,7 +2,7 @@
 
 [返回总览](<Agents 调研.md>)
 
-写作日期：2026-09-07；Memory / Skill 自动学习机制补充：2026-09-15。源码基准：2026-09-06 获取的 [245e48008fa8](https://github.com/NousResearch/hermes-agent/commit/245e48008fa814b3251f50755eb656bd9fb86cb1)，提交者时间（committer date）为北京时间 2026-09-06 08:00:18。本文沿用这一固定版本，依据源码和随仓库保存的官方文档分析实现，未安装或运行项目；学习效果、实际召回率及运行成本不在本次验证范围内。
+写作日期：2026-09-07；Memory / Skill 自动学习机制补充：2026-09-15；文件格式与示例补充：2026-09-16。源码基准：2026-09-06 获取的 [245e48008fa8](https://github.com/NousResearch/hermes-agent/commit/245e48008fa814b3251f50755eb656bd9fb86cb1)，提交者时间（committer date）为北京时间 2026-09-06 08:00:18。本文沿用这一固定版本，依据源码和随仓库保存的官方文档分析实现，未安装或运行项目；学习效果、实际召回率及运行成本不在本次验证范围内。
 
 ## 1. 设计目标与核心取舍
 
@@ -226,6 +226,114 @@ skill_manage(
 
 **因此，“越用越会”应拆成三个可检查结果：有无保存、后续是否加载、加载后是否做得更好。** Hermes 实现了前两项的写入与读取机制，并记录部分使用活动；第三项仍要靠真实任务的验证结果和用户反馈，不能从技能数量增长或一次复盘完成直接推断。
 
+### 4.7 自动生成的 Skill：一般结构与完整示例
+
+自动生成技能的核心产物是 **YAML 元数据 + Markdown 操作手册**。默认保存到当前 profile 的 `skills/`，通常对应 `~/.hermes/skills/`；`skills.create_dir` 可覆盖新建位置。只有 `SKILL.md` 是技能的核心文件，参考资料、脚本、模板和素材按需添加。
+
+#### 一般结构：先说明何时使用，再说明如何执行
+
+`SKILL.md` 可以按下面的框架组织。开头的 YAML 提供技能名称和匹配描述；后面的 Markdown 指导具体执行。下面尖括号中的内容是待填写说明，正文的小节可按任务增减。
+
+```markdown
+---
+name: <skill-name>
+description: <简述适用场景与用途，新建时不超过 60 字符>
+---
+
+# <技能名称>
+
+## 适用场景
+<哪些任务应该加载本技能，必要时说明不适用的情况。>
+
+## 前置条件
+<所需环境、工具、配置或输入；没有额外条件时可省略。>
+
+## 执行步骤
+1. <第一步：具体动作，以及何时可以进入下一步。>
+2. <第二步：命令、工具调用或判断分支。>
+
+## 注意事项
+<容易出错的地方、正确处理方式及原因。>
+
+## 用户偏好
+<用户对这类任务的执行方式或交付结果的要求；没有时可省略。>
+
+## 验证标准
+<如何确认任务完成，失败时需要报告哪些证据。>
+```
+
+**强制格式是包含 `name`、`description` 的 YAML 和非空正文。** 上述正文标题属于组织建议，解析器不要求逐项出现；内容较长时，可将资料、脚本或模板拆到支持文件，并在对应步骤中给出入口。
+
+| 部分 | 格式及要求 | 用途 |
+| --- | --- | --- |
+| 文件开头 | 由两行 `---` 包围的 YAML 映射，必须包含 `name`、`description` | 为技能提供名称和任务匹配描述。 |
+| 名称 | 创建操作的名称最长 64 字符，可用小写字母、数字、连字符、点和下划线，首字符为字母或数字 | 定位技能；正文头部的名称应与创建名称一致。 |
+| 描述 | 新建技能的描述不超过 60 字符；触发场景放前面 | 系统提示先展示短描述，正文后续按需读取。 |
+| 正文 | YAML 之后必须有非空内容，整个 `SKILL.md` 上限 100,000 字符 | 适用场景、步骤、注意事项、用户偏好和验证标准由模型组织；这些小节名没有固定解析规则。 |
+| 扩展元数据 | 可出现 `version`、`author`、`platforms`、`metadata` 等 | 不属于创建校验器统一要求的必填字段；仓库贡献规范可另有要求。 |
+| 支持文件 | `references/`、`scripts/`、`templates/`、`assets/`；`write_file` 单文件上限 1 MiB | 正文提供入口，细节或可执行逻辑放到相应文件中。 |
+
+[创建路径说明](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/website/docs/user-guide/features/skills.md#L417-L433)、[名称与目录限制](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/skill_manager_tool.py#L83-L127)、[元数据与正文校验](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/skill_manager_tool.py#L130-L174)、[生成内容的提示规则](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/background_review.py#L315-L338)
+
+自动生成不会给正文附加一种特殊“学习格式”。技能是否交由后台管理、读取多少次、修改多少次等信息，保存在旁边的 `skills/.usage.json`；无需把这些字段塞进 `SKILL.md`。其中 `created_by: "agent"` 是管理标记，手动 `adopt` 也能设置，不能独自证明某次后台生成的来源。[管理元数据](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/skill_usage.py#L1-L6)、[标记含义](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/skill_usage.py#L271-L278)
+
+#### 完整例子：项目集成测试技能
+
+下面是按上述结构构造的示意包，未运行 Hermes 生成，也未创建这些实际文件。它展示如何把一次已验证的排障经验整理成后续可复用的技能。
+
+```text
+~/.hermes/skills/software-development/project-testing/
+├── SKILL.md
+├── scripts/                         # 可选：可重复执行的辅助程序
+│   └── wait_for_dependencies.py
+├── references/                      # 可选：详细排查资料
+│   └── troubleshooting.md
+└── templates/                       # 可选：可复制修改的起始文件
+    └── test-report.md
+```
+
+假设本次排障已验证“依赖容器启动后，仍需等待健康检查通过才能测试”，复盘模型可将其提炼成以下 `SKILL.md`。示例中的支持文件若被正文引用，应随技能一并生成；具体命令和检查逻辑取自实际任务验证结果。
+
+```markdown
+---
+name: project-testing
+description: 运行本项目的集成测试并定位依赖故障。
+---
+
+# 项目集成测试
+
+## 适用场景
+
+运行本项目的集成测试，或排查测试中的连接失败、依赖未就绪问题。
+
+## 执行步骤
+
+1. 阅读项目的测试配置，确认依赖服务和测试入口。
+2. 使用 terminal 启动项目约定的依赖容器。
+3. 使用 terminal 执行本技能的 scripts/wait_for_dependencies.py，
+   确认依赖服务健康后再启动测试。
+4. 先运行与本次修改直接相关的测试。
+5. 失败时检查首个错误及依赖日志，再判断是否扩大测试范围。
+
+## 注意事项
+
+- 容器处于 running 状态不代表服务就绪；必须检查健康状态，
+  避免把启动时序问题误判为代码缺陷。
+- 连接失败时先检查服务地址和运行环境，再修改业务代码。
+- 常见故障的排查顺序见 references/troubleshooting.md。
+
+## 用户偏好
+
+结果先说明是否通过，再列出失败项与关键证据。
+需要结构化报告时，使用 templates/test-report.md。
+
+## 验证标准
+
+- 依赖健康检查通过。
+- 目标测试通过；未通过时明确失败原因及尚未验证的部分。
+```
+
+若要查看仓库内真实完整文件，可读 [systematic-debugging/SKILL.md](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/skills/software-development/systematic-debugging/SKILL.md)。它包含多阶段排障流程，与自动生成技能采用同一文件形式；它属于内置技能，不作为某次自动学习产物的证据。
 
 ## 5. 上下文管理：预算、压缩与恢复
 
@@ -331,6 +439,64 @@ profile 用于组织目录，不是同一系统用户内的权限边界：历史
 外部服务接入后，`MemoryManager` 可在回合开始预取相关记忆，在回合结束把输入、回复和可选消息交给 `sync_turn`；压缩前可调 `on_pre_compress`，真实会话边界可调 `on_session_end`。回合同步使用串行后台 worker，CLI `/new` 的结束提取与会话切换也按顺序排入同一个任务，避免旧对话被存入新会话。[回合同步](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/memory_manager.py#L470-L489)、[会话边界顺序](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/memory_manager.py#L593-L623)
 
 这些接口不意味着所有插件都会自动抽取知识，更不意味着每次压缩都会无条件提炼并写入内置 `MEMORY.md`。本版本压缩前的记忆回调走外部 manager，能力由具体 provider 实现；内置短记忆的写入仍由 `memory` 工具承担。[Provider 接口](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/memory_provider.py#L107-L155)、[压缩前回调分支](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/agent/conversation_compression.py#L2590-L2627)
+
+### 6.4 USER.md 与 MEMORY.md：磁盘格式与内容示例
+
+源码实际使用的文件名是大写 **`USER.md` 与 `MEMORY.md`**，都位于当前 profile 的 `memories/` 目录。默认目录形态如下；指定 `HERMES_HOME` 或切换 profile 后，根目录相应变化。
+
+```text
+~/.hermes/
+├── memories/
+│   ├── USER.md
+│   └── MEMORY.md
+└── skills/
+    └── software-development/
+        └── project-testing/
+            └── SKILL.md
+```
+
+这两个记忆文件采用相同格式：**纯文本条目以 `\n§\n` 连接，即条目之间单独一行 `§`**。条目可以包含多行文字或 Markdown，但没有必填 YAML、标题、时间戳、标签或条目 ID；保存工具主要把每个条目当成字符串处理。下面两份都是构造样例，不代表当前用户的真实资料，也没有写入 Hermes 的记忆目录。[目录解析](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool.py#L38-L40)、[文件名与容量计算](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool_store.py#L161-L176)、[分隔符定义](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool_store.py#L18-L24)
+
+#### USER.md 示例：用户身份与长期偏好
+
+```text
+用户主要使用中文交流，默认偏好简短回答，需要时会明确要求展开。
+§
+用户从事后端开发，常用 Go 和 Python。
+§
+用户所在时区为 Asia/Shanghai。
+```
+
+对应保存目标是 `memory(target="user", ...)`，默认总容量 **1,375 字符**。每段描述一项长期事实或偏好；某类任务的专属流程和输出约定，应放入相应 Skill。模型可以按唯一子串识别其中一个条目，替换整条内容，示例见 6.2。
+
+#### MEMORY.md 示例：稳定环境与跨任务事实
+
+```text
+当前工作环境为 macOS，常用代码仓库位于 ~/workspaces。
+§
+开发环境的 PostgreSQL 和 Redis 由 Docker Compose 管理。
+§
+研究资料归档在 ~/notes，长期技术文档使用 Markdown 保存。
+```
+
+对应保存目标是 `memory(target="memory", ...)`，默认总容量 **2,200 字符**。这里保存环境事实；“如何启动依赖、等待健康检查、执行测试”的步骤归入 `project-testing` 技能。“本次完成了哪项测试”“刚才报了什么错”等临时内容仍留在会话历史。[保存范围与目标](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool.py#L215-L244)
+
+#### 格式细节与注入提示后的形态
+
+- **分隔符决定条目边界。** 解析器按完整的 `\n§\n` 切分，再去掉条目首尾空白与空条目；普通换行、空行、`#` 标题或 `-` 项目符号都不会自行创建新条目。
+- **容量包括分隔符。** 用量按 `len("\n§\n".join(entries))` 计算，衡量字符数，不是 token 数或 UTF-8 字节数。
+- **文件不必含展示标题。** 注入系统提示时，运行时才添加 `USER PROFILE (who the user is)` 或 `MEMORY (your personal notes)` 标题、容量指示与分隔线；这些不是磁盘文件要求的头部。
+- **修改单位是记忆条目。** `replace` / `remove` 的 `old_text` 用来匹配条目，不是行号；出现多个不同匹配会拒绝操作。把不同事实拆成简短条目，后续更容易精确更新。
+
+[条目解析和写入](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool_store.py#L372-L390)、[提示块渲染](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool_store.py#L346-L352)、[唯一条目匹配](https://github.com/NousResearch/hermes-agent/blob/245e48008fa814b3251f50755eb656bd9fb86cb1/tools/memory_tool_store.py#L58-L64)
+
+三种文件的区别可以概括为：
+
+| 文件 | 格式 | 内容重心 | 读取方式 |
+| --- | --- | --- | --- |
+| `SKILL.md` | YAML 元数据 + Markdown 正文，可带支持文件 | 如何完成某类任务 | 先索引匹配，再按需加载。 |
+| `USER.md` | 以独立一行 `§` 分隔的文本条目 | 用户是谁、有什么长期偏好 | 建立或重建提示时整体注入。 |
+| `MEMORY.md` | 同上 | 跨任务适用的稳定环境与约定 | 建立或重建提示时整体注入。 |
 
 ## 7. 三项与长期使用相关的扩展
 
