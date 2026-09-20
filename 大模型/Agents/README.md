@@ -1,6 +1,8 @@
 # Agents
 
 - [Agents 调研](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Agents/Agents%20%E8%B0%83%E7%A0%94.md)
+- [Codex Memory 设计与实现](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Agents/Codex%20Memory%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0.md)
+- [Codex 设计与实现](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Agents/Codex%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0.md)
 - [CrewAI 设计与实现](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Agents/CrewAI%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0.md)
 - [DeepSeek Harness 设计与实现](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Agents/DeepSeek%20Harness%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0.md)
 - [Hermes Agent 设计与实现](https://github.com/Uyouii/Reading/blob/master/%E5%A4%A7%E6%A8%A1%E5%9E%8B/Agents/Hermes%20Agent%20%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0.md)

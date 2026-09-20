@@ -341,6 +341,8 @@ metadata:
 
 ### 6.3 Memory：两阶段提取与合并
 
+专题补充（2026-09-20）：[Codex Memory 设计与实现](</Users/taiyou/project/uyouiigit/Reading/大模型/Agents/Codex Memory 设计与实现.md>) 沿更新后的本地源码展开 V1/V2、任务租约、增量合并、读取引用与遗忘机制；本节仍保留本文原始提交基准的概览。
+
 本地 feature 定义中，`memories` 为 Stable，但 `default_enabled: false`；内置默认记忆版本为 V1。最终是否启用还受宿主及配置影响，不能据此推断某个已安装产品的实际状态。[功能开关](https://github.com/openai/codex/blob/e269f2164cbb9f499e4f22301c393500e2a831f3/codex-rs/features/src/lib.rs#L1133-L1139)、[记忆默认配置](https://github.com/openai/codex/blob/e269f2164cbb9f499e4f22301c393500e2a831f3/codex-rs/config/src/types.rs#L334-L368)
 
 ```mermaid
